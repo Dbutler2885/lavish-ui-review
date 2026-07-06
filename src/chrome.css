@@ -684,9 +684,8 @@ body.lavish {
      the tally bubble stacks BELOW the label inside the tab. */
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 8px;
-  min-height: 118px;
   border: 0;
   background: var(--accent);
   color: var(--accent-ink);
