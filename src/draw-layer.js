@@ -1,4 +1,4 @@
-/* global document, window */
+/* global CSS, document, window */
 
 // The pixel drawing layer: vector marks drawn over the rendered artifact.
 //
@@ -128,6 +128,38 @@ export function isDegenerateShape(shape, min = 4) {
   return b.w < min && b.h < min;
 }
 
+// Assemble a unit of guidance from cued parts (slice 08). The shape matches
+// the lavish-frontend-workflow unit model exactly: refs are dom selectors
+// with page-coordinate rects, marks are the serialized drawings, and one
+// note binds the marks (the explicitly selected ones, or all of them when
+// nothing is selected) plus every ref.
+export function buildUnit({ id, state = "default", marks = [], refs = [], noteText = "", selectedMarkIds = [] }) {
+  const boundMarks = selectedMarkIds.length > 0 ? selectedMarkIds : marks.map((m) => m.id);
+  const binds = [...boundMarks, ...refs.map((_, i) => "ref:" + i)];
+  const unit = {
+    v: 1,
+    id,
+    state,
+    refs: refs.map((r) => ({ type: "dom", selector: r.selector, rect: r.rect })),
+    marks,
+    notes: [],
+    createdAt: new Date().toISOString(),
+  };
+  const text = String(noteText || "").trim();
+  if (text) unit.notes.push({ text, binds });
+  return unit;
+}
+
+// A short human-readable preview of a unit for the queue pill.
+export function unitPreview(unit) {
+  const parts = [];
+  if (unit.marks.length) parts.push(unit.marks.length + " mark" + (unit.marks.length === 1 ? "" : "s"));
+  if (unit.refs.length) parts.push(unit.refs.length + " element" + (unit.refs.length === 1 ? "" : "s"));
+  const what = parts.length ? " [" + parts.join(" + ") + "]" : "";
+  const note = unit.notes[0]?.text || "(visual guidance, no note)";
+  return note + what;
+}
+
 export const drawHelpers = {
   shapesToMarks,
   marksToShapes,
@@ -137,6 +169,8 @@ export const drawHelpers = {
   rectsIntersect,
   createHistory,
   isDegenerateShape,
+  buildUnit,
+  unitPreview,
 };
 
 // ---------------------------------------------------------------------------
@@ -154,6 +188,8 @@ export function createDrawLayer(helpers) {
     rectsIntersect,
     createHistory,
     isDegenerateShape,
+    buildUnit,
+    unitPreview,
   } = helpers;
 
   const STROKES = ["#ff2d55", "#2e77b5", "#2f7d32", "#e8a33d", "#111111", "#ffffff"];
@@ -183,6 +219,10 @@ export function createDrawLayer(helpers) {
   let drag = null; // in-progress draw gesture
   let moveDrag = null; // in-progress selection move
   let ui = {};
+  let pendingRefs = []; // picked DOM elements awaiting a cue
+  let picking = false; // element-pick mode
+  let pickOutline = null;
+  let unitSeq = 0;
 
   function nextMarkId() {
     markSeq += 1;
@@ -266,6 +306,20 @@ export function createDrawLayer(helpers) {
           stroke: "#2e77b5",
           dash: [6, 4],
           fill: "rgba(46,119,181,0.10)",
+          listening: false,
+        }),
+      );
+    }
+    for (const ref of pendingRefs) {
+      layer.add(
+        new win.Konva.Rect({
+          x: ref.rect.x,
+          y: ref.rect.y,
+          width: ref.rect.w,
+          height: ref.rect.h,
+          stroke: "#f4c95d",
+          dash: [8, 5],
+          strokeWidth: 2,
           listening: false,
         }),
       );
@@ -503,7 +557,15 @@ export function createDrawLayer(helpers) {
       "button.tool:disabled{opacity:.4;cursor:default}" +
       ".swatch{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}" +
       ".swatch.active{border-color:#f4c95d}" +
-      ".sep{height:1px;background:#303745;margin:2px 0}";
+      ".sep{height:1px;background:#303745;margin:2px 0}" +
+      ".cue-card{position:fixed;left:14px;bottom:120px;width:min(340px,calc(100vw - 28px));background:#11141a;border:1px solid #f4c95d;border-radius:14px;padding:12px;box-shadow:0 20px 70px rgba(0,0,0,.35);color:#f7f3ea}" +
+      ".cue-head{font-weight:700;font-size:14px;margin-bottom:4px}" +
+      ".cue-meta{font-size:11px;color:#aeb6c6;margin-bottom:8px}" +
+      ".cue-card textarea{width:100%;min-height:72px;resize:vertical;border-radius:10px;border:1px solid #3c4557;background:#0f1115;color:#f7f3ea;padding:9px;font:13px/1.4 inherit}" +
+      ".cue-row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}" +
+      ".cue-row button{border:0;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer}" +
+      ".cue-cancel{background:#2a2f3a;color:#f7f3ea}" +
+      ".cue-queue{background:#f4c95d;color:#17130a}";
     shadowRoot.appendChild(style);
 
     const pill = document.createElement("button");
@@ -585,6 +647,8 @@ export function createDrawLayer(helpers) {
           });
         },
       ],
+      ["pick", "Bind a page element (click one)", "&#8982;", () => startPicking()],
+      ["cue", "Cue these marks + elements as a unit", "&#10148;", () => openCueCard()],
       [
         "clear",
         "Clear all marks",
@@ -621,6 +685,8 @@ export function createDrawLayer(helpers) {
     for (const b of ui.palette.querySelectorAll(".swatch")) {
       b.classList.toggle("active", b.dataset.stroke === stroke);
     }
+    const pickBtn = ui.palette.querySelector('button[data-action="pick"]');
+    if (pickBtn) pickBtn.classList.toggle("active", picking);
     const undoBtn = ui.palette.querySelector('button[data-action="undo"]');
     const redoBtn = ui.palette.querySelector('button[data-action="redo"]');
     const groupBtn = ui.palette.querySelector('button[data-action="group"]');
@@ -656,6 +722,159 @@ export function createDrawLayer(helpers) {
     ui.stageContainer = container;
   }
 
+  function currentState() {
+    const stateRoot = document.querySelector("[data-state]");
+    return (stateRoot && stateRoot.getAttribute("data-state")) || "default";
+  }
+
+  function stopPicking() {
+    picking = false;
+    if (ui.stageContainer) ui.stageContainer.style.pointerEvents = active ? "auto" : "none";
+    if (pickOutline) {
+      pickOutline.remove();
+      pickOutline = null;
+    }
+    document.removeEventListener("mousemove", onPickMove, true);
+    document.removeEventListener("click", onPickClick, true);
+    syncToolbar();
+  }
+
+  function onPickMove(evt) {
+    const el = pickTargetAt(evt);
+    if (!pickOutline) {
+      pickOutline = document.createElement("div");
+      pickOutline.setAttribute("data-lavish-ui", "pick-outline");
+      pickOutline.style.cssText =
+        "position:absolute;z-index:2147483500;pointer-events:none;outline:2px solid #f4c95d;outline-offset:2px;background:rgba(244,201,93,0.08);";
+      document.documentElement.appendChild(pickOutline);
+    }
+    const r = el.getBoundingClientRect();
+    pickOutline.style.left = r.left + window.scrollX + "px";
+    pickOutline.style.top = r.top + window.scrollY + "px";
+    pickOutline.style.width = r.width + "px";
+    pickOutline.style.height = r.height + "px";
+  }
+
+  function pickTargetAt(evt) {
+    const el = document.elementFromPoint(evt.clientX, evt.clientY);
+    return el && !el.closest("[data-lavish-ui]") ? el : document.body;
+  }
+
+  // Same selector strategy as the artifact SDK: id wins, otherwise a short
+  // nth-of-type path.
+  function selectorFor(el) {
+    const parts = [];
+    let node = el;
+    while (node && node.nodeType === 1 && parts.length < 5) {
+      let part = node.tagName.toLowerCase();
+      if (node.id) {
+        parts.unshift(part + "#" + CSS.escape(node.id));
+        break;
+      }
+      const parent = node.parentElement;
+      if (parent) {
+        const same = [...parent.children].filter((x) => x.tagName === node.tagName);
+        if (same.length > 1) part += ":nth-of-type(" + (same.indexOf(node) + 1) + ")";
+      }
+      parts.unshift(part);
+      node = parent;
+    }
+    return parts.join(" > ");
+  }
+
+  function onPickClick(evt) {
+    if (!picking) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    const el = pickTargetAt(evt);
+    const r = el.getBoundingClientRect();
+    pendingRefs.push({
+      selector: selectorFor(el),
+      rect: {
+        x: Math.round(r.left + window.scrollX),
+        y: Math.round(r.top + window.scrollY),
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      },
+    });
+    stopPicking();
+    render();
+  }
+
+  function startPicking() {
+    if (picking) {
+      stopPicking();
+      return;
+    }
+    picking = true;
+    if (ui.stageContainer) ui.stageContainer.style.pointerEvents = "none";
+    document.addEventListener("mousemove", onPickMove, true);
+    document.addEventListener("click", onPickClick, true);
+    syncToolbar();
+  }
+
+  function closeCueCard() {
+    if (ui.cueCard) {
+      ui.cueCard.remove();
+      ui.cueCard = null;
+    }
+  }
+
+  function openCueCard() {
+    if (shapes.length === 0 && pendingRefs.length === 0) return;
+    closeCueCard();
+    const boundCount = selectedIds.length > 0 ? selectedIds.length : shapes.length;
+    const card = document.createElement("div");
+    card.className = "cue-card";
+    card.innerHTML =
+      '<div class="cue-head">Cue a unit of guidance</div>' +
+      '<div class="cue-meta">' +
+      boundCount +
+      " mark" +
+      (boundCount === 1 ? "" : "s") +
+      (selectedIds.length > 0 ? " (selected)" : "") +
+      " &middot; " +
+      pendingRefs.length +
+      " element" +
+      (pendingRefs.length === 1 ? "" : "s") +
+      " &middot; state: " +
+      currentState() +
+      "</div>" +
+      '<textarea placeholder="What should change here? The drawing shows; your words decide."></textarea>' +
+      '<div class="cue-row"><button class="cue-cancel" type="button">Cancel</button><button class="cue-queue" type="button">Queue unit</button></div>';
+    card.querySelector(".cue-cancel").addEventListener("click", closeCueCard);
+    card.querySelector(".cue-queue").addEventListener("click", () => {
+      unitSeq += 1;
+      const unit = buildUnit({
+        id: "u" + Date.now().toString(36) + "-" + unitSeq,
+        state: currentState(),
+        marks: shapesToMarks(selectedIds.length > 0 ? shapes.filter((sh) => selectedIds.includes(sh.id)) : shapes),
+        refs: pendingRefs,
+        noteText: card.querySelector("textarea").value,
+        selectedMarkIds: [],
+      });
+      const lavish = win.lavish;
+      if (lavish && typeof lavish.queuePrompt === "function") {
+        lavish.queuePrompt(unitPreview(unit), { tag: "unit", text: unitPreview(unit), data: { unit } });
+      }
+      pendingRefs = [];
+      selectedIds = [];
+      closeCueCard();
+      render();
+    });
+    const textarea = card.querySelector("textarea");
+    textarea.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter" && !evt.shiftKey) {
+        evt.preventDefault();
+        /** @type {HTMLButtonElement} */ (card.querySelector(".cue-queue")).click();
+      }
+      if (evt.key === "Escape") closeCueCard();
+    });
+    ui.shadowRoot.appendChild(card);
+    ui.cueCard = card;
+    setTimeout(() => textarea.focus(), 0);
+  }
+
   function setActive(on) {
     active = on;
     ensureUi();
@@ -667,8 +886,10 @@ export function createDrawLayer(helpers) {
         ui.stageContainer.style.pointerEvents = "auto";
         render();
       });
-    } else if (ui.stageContainer) {
-      ui.stageContainer.style.pointerEvents = "none";
+    } else {
+      if (picking) stopPicking();
+      closeCueCard();
+      if (ui.stageContainer) ui.stageContainer.style.pointerEvents = "none";
     }
   }
 
@@ -685,6 +906,9 @@ export function createDrawLayer(helpers) {
 
   win.lavishDraw = {
     getMarks: () => shapesToMarks(shapes),
+    getPendingRefs: () => pendingRefs.slice(),
+    openCueCard,
+    startPicking,
     setMarks: (marks) => {
       shapes = marksToShapes(marks);
       markSeq = shapes.length;

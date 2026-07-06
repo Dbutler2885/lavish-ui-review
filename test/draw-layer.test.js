@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildUnit,
+  unitPreview,
   shapesToMarks,
   marksToShapes,
   decimatePoints,
@@ -146,4 +148,66 @@ test("isDegenerateShape discards meaningless gestures", () => {
       }),
     ),
   );
+});
+
+test("buildUnit binds selected marks (or all) plus refs, matching the unit model", () => {
+  const marks = [
+    {
+      id: "m1",
+      type: "box",
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 10 },
+      ],
+    },
+    {
+      id: "m2",
+      type: "arrow",
+      points: [
+        { x: 5, y: 5 },
+        { x: 20, y: 20 },
+      ],
+    },
+  ];
+  const refs = [{ selector: "#title", rect: { x: 1, y: 2, w: 30, h: 40 } }];
+  const unit = buildUnit({
+    id: "u1",
+    state: "modal-open",
+    marks,
+    refs,
+    noteText: "  move this up  ",
+    selectedMarkIds: ["m2"],
+  });
+  assert.equal(unit.v, 1);
+  assert.equal(unit.state, "modal-open");
+  assert.deepEqual(unit.refs[0], { type: "dom", selector: "#title", rect: { x: 1, y: 2, w: 30, h: 40 } });
+  assert.deepEqual(unit.notes[0].binds, ["m2", "ref:0"]);
+  assert.equal(unit.notes[0].text, "move this up");
+  // No selection: binds all marks.
+  const all = buildUnit({ id: "u2", marks, refs: [], noteText: "x" });
+  assert.deepEqual(all.notes[0].binds, ["m1", "m2"]);
+  // No note text: no notes entry (drawing alone is a legal unit).
+  const bare = buildUnit({ id: "u3", marks, refs: [] });
+  assert.deepEqual(bare.notes, []);
+});
+
+test("unitPreview summarizes note, marks, and elements", () => {
+  const unit = buildUnit({
+    id: "u1",
+    marks: [
+      {
+        id: "m1",
+        type: "box",
+        points: [
+          { x: 0, y: 0 },
+          { x: 1, y: 1 },
+        ],
+      },
+    ],
+    refs: [{ selector: "#a", rect: { x: 0, y: 0, w: 1, h: 1 } }],
+    noteText: "curve the title",
+  });
+  assert.equal(unitPreview(unit), "curve the title [1 mark + 1 element]");
+  const bare = buildUnit({ id: "u2", marks: [], refs: [{ selector: "#a", rect: { x: 0, y: 0, w: 1, h: 1 } }] });
+  assert.match(unitPreview(bare), /visual guidance, no note/);
 });
