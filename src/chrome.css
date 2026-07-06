@@ -615,7 +615,9 @@ body.lavish {
   height: calc(100vh - var(--bar-h));
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--panel-w);
+  /* The conversation panel OVERLAYS the artifact (position:fixed below)
+     instead of claiming a grid column, and is minimizable. */
+  grid-template-columns: minmax(0, 1fr);
 }
 .frame {
   min-width: 0;
@@ -625,6 +627,11 @@ body.lavish {
   overflow: hidden;
 }
 .panel {
+  position: fixed;
+  top: var(--bar-h);
+  right: 0;
+  bottom: 0;
+  z-index: 60;
   width: var(--panel-w);
   border-left: var(--hairline-subtle);
   background: var(--bg-panel);
@@ -632,6 +639,67 @@ body.lavish {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  box-shadow: -18px 0 48px rgba(0, 0, 0, 0.35);
+  transition: transform 0.18s ease;
+}
+.panel.minimized {
+  transform: translateX(calc(100% + 24px));
+  pointer-events: none;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-head h2 {
+  flex: 1;
+}
+.panel-toggle {
+  margin: 12px 12px 0 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg-faint);
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.panel-toggle:hover {
+  color: var(--fg);
+  border-color: var(--border-strong);
+}
+.panel-reopen {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 59;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-panel);
+  color: var(--fg);
+  font: var(--w-semi) 13px var(--font-sans);
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--shadow-floating);
+}
+.panel-reopen[hidden] {
+  display: none;
+}
+.panel-reopen .reopen-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: none;
+}
+.panel-reopen.has-news .reopen-dot {
+  display: block;
 }
 .panel h2 {
   font-size: 15px;

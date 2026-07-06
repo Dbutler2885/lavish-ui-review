@@ -25,6 +25,9 @@ const sendMenu = /** @type {HTMLDivElement} */ (document.getElementById("sendMen
 const sendFromMenuButton = /** @type {HTMLButtonElement} */ (document.getElementById("sendFromMenu"));
 const sendAndEndButton = /** @type {HTMLButtonElement} */ (document.getElementById("sendAndEnd"));
 const annotationSwitch = /** @type {HTMLButtonElement} */ (document.getElementById("annotation"));
+const panel = /** @type {HTMLElement} */ (document.getElementById("panel"));
+const panelToggle = /** @type {HTMLButtonElement} */ (document.getElementById("panelToggle"));
+const panelReopen = /** @type {HTMLButtonElement} */ (document.getElementById("panelReopen"));
 const moreWrap = /** @type {HTMLDivElement} */ (document.getElementById("moreWrap"));
 const moreButton = /** @type {HTMLButtonElement} */ (document.getElementById("moreButton"));
 const moreMenu = /** @type {HTMLDivElement} */ (document.getElementById("moreMenu"));
@@ -204,6 +207,19 @@ async function copyText(text) {
   return true;
 }
 
+function setPanelMinimized(minimized) {
+  if (!panel || !panelReopen) return;
+  panel.classList.toggle("minimized", minimized);
+  panelReopen.hidden = !minimized;
+  if (!minimized) {
+    panelReopen.classList.remove("has-news");
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+}
+
+if (panelToggle) panelToggle.addEventListener("click", () => setPanelMinimized(true));
+if (panelReopen) panelReopen.addEventListener("click", () => setPanelMinimized(false));
+
 function addChat(role, text) {
   if (!text) return;
 
@@ -212,6 +228,10 @@ function addChat(role, text) {
   el.innerHTML = "<small>" + (role === "agent" ? "Agent" : "You") + "</small><div>" + escapeHtml(text) + "</div>";
   chatLog.appendChild(el);
   chatLog.scrollTop = chatLog.scrollHeight;
+  // Surface agent replies that arrive while the panel is minimized.
+  if (role === "agent" && panel && panel.classList.contains("minimized") && panelReopen) {
+    panelReopen.classList.add("has-news");
+  }
 }
 
 function syncChat(chat) {

@@ -1103,10 +1103,11 @@ test("/chrome.css serves the extracted chrome stylesheet", async () => {
     assert.equal(res.status, 200);
     assert.match(res.headers.get("content-type") || "", /text\/css/);
     assert.match(normalizeCssForAssertions(body), /--ink-900:#0f1115/);
-    assert.match(
-      normalizeCssForAssertions(body),
-      /\.layout\{[^}]*grid-template-columns:minmax\(0,1fr\) ?var\(--panel-w\)/,
-    );
+    // Fork: the conversation panel overlays the artifact (single-column
+    // layout, fixed panel, minimizable) instead of claiming a grid column.
+    assert.match(normalizeCssForAssertions(body), /\.layout\{[^}]*grid-template-columns:minmax\(0,1fr\)[;}]/);
+    assert.match(normalizeCssForAssertions(body), /\.panel\{[^}]*position:fixed/);
+    assert.match(normalizeCssForAssertions(body), /\.panel\.minimized\{[^}]*transform:translateX/);
   } finally {
     await server.close();
     await rm(dir, { recursive: true, force: true });
