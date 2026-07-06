@@ -672,21 +672,29 @@ body.lavish {
   border-color: var(--border-strong);
 }
 .panel-reopen {
+  /* A drawer handle hugging the right edge: accent-colored so it stays
+     visible over any artifact, dark or light. */
   position: fixed;
-  right: 14px;
-  bottom: 14px;
+  right: 0;
+  top: calc(var(--bar-h) + 18px);
   z-index: 59;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg-panel);
-  color: var(--fg);
-  font: var(--w-semi) 13px var(--font-sans);
-  padding: 9px 14px;
-  border-radius: 999px;
+  gap: 7px;
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: var(--w-bold) 12px var(--font-sans);
+  letter-spacing: 0.04em;
+  writing-mode: vertical-rl;
+  padding: 12px 7px;
+  border-radius: 10px 0 0 10px;
   cursor: pointer;
-  box-shadow: var(--shadow-floating);
+  box-shadow: -6px 4px 24px rgba(0, 0, 0, 0.35);
+}
+.panel-reopen:hover {
+  background: var(--accent-hover);
 }
 .panel-reopen[hidden] {
   display: none;
@@ -695,7 +703,7 @@ body.lavish {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--danger);
   display: none;
 }
 .panel-reopen.has-news .reopen-dot {
