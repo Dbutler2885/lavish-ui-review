@@ -22,6 +22,9 @@ importers:
       express:
         specifier: ^5.2.1
         version: 5.2.1
+      konva:
+        specifier: ^10.3.0
+        version: 10.3.0
       open:
         specifier: ^10.2.0
         version: 10.2.0
@@ -735,6 +738,10 @@ packages:
   keyv@4.5.4:
     resolution:
       { integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw== }
+
+  konva@10.3.0:
+    resolution:
+      { integrity: sha512-gt19K2gzY4lHbnkvsku7eSmB+A9PTS2jG4F9coBMsdjM1UKfJNxJbDbXVpeCW1wjEGRwBD3nBamcHnqJhAeKlg== }
 
   levn@0.4.1:
     resolution:
@@ -1522,6 +1529,8 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  konva@10.3.0: {}
 
   levn@0.4.1:
     dependencies:

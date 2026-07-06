@@ -19,6 +19,7 @@ import {
   MODE_TOGGLE_HOTKEY_KEY,
   resolveVisibleSpillCandidates,
 } from "./artifact-sdk.js";
+import { createDrawLayer, drawHelpers } from "./draw-layer.js";
 import * as mermaidNode from "./mermaid-node.js";
 import {
   buildSelfContainedHtml,
@@ -33,6 +34,14 @@ import { canonicalFile, SessionStore, sessionKey } from "./session-store.js";
 
 const chromeClientUrl = new URL("./chrome-client.js", import.meta.url);
 const chromeCssUrl = new URL("./chrome.css", import.meta.url);
+const vendorAssetUrls = {
+  "konva.min.js": {
+    packaged: new URL("./vendor/konva.min.js", import.meta.url),
+    source: new URL("../node_modules/konva/konva.min.js", import.meta.url),
+    type: "application/javascript",
+  },
+};
+
 const designAssetUrls = {
   "daisyui.css": {
     packaged: new URL("./design/daisyui.css", import.meta.url),
@@ -482,6 +491,19 @@ export async function serve({
   app.get("/design/:asset", async (req, res, next) => {
     try {
       const asset = designAssetUrls[req.params.asset];
+      if (!asset) {
+        res.status(404).send("Not found");
+        return;
+      }
+      res.type(asset.type).send(await readDesignAsset(asset));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/vendor/:asset", async (req, res, next) => {
+    try {
+      const asset = vendorAssetUrls[req.params.asset];
       if (!asset) {
         res.status(404).send("Not found");
         return;
@@ -948,6 +970,9 @@ export function createSdkJs(key) {
   const mermaidHelperEntries = Object.entries(mermaidNode).filter(([, value]) => typeof value === "function");
   const mermaidHelperDecls = mermaidHelperEntries.map(([name, fn]) => `const ${name}=${fn.toString()};`).join("\n");
   const mermaidHelperKeys = mermaidHelperEntries.map(([name]) => name).join(", ");
+  const drawHelperEntries = Object.entries(drawHelpers).filter(([, value]) => typeof value === "function");
+  const drawHelperDecls = drawHelperEntries.map(([name, fn]) => `const ${name}=${fn.toString()};`).join("\n");
+  const drawHelperKeys = drawHelperEntries.map(([name]) => name).join(", ");
   return `(() => {
 const key=${JSON.stringify(key)};
 void key;
@@ -962,6 +987,9 @@ const classifyVerticalOverflow=${classifyVerticalOverflow.toString()};
 ${mermaidHelperDecls}
 const mermaidHelpers={ ${mermaidHelperKeys} };
 (${createArtifactSdk.toString()})(deriveQueueKey, isNativeInteractiveControl, mermaidHelpers);
+${drawHelperDecls}
+const drawHelpers={ ${drawHelperKeys} };
+(${createDrawLayer.toString()})(drawHelpers);
 })();`;
 }
 
