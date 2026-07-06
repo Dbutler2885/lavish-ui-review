@@ -28,6 +28,7 @@ const annotationSwitch = /** @type {HTMLButtonElement} */ (document.getElementBy
 const panel = /** @type {HTMLElement} */ (document.getElementById("panel"));
 const panelToggle = /** @type {HTMLButtonElement} */ (document.getElementById("panelToggle"));
 const panelReopen = /** @type {HTMLButtonElement} */ (document.getElementById("panelReopen"));
+const panelReopenCount = /** @type {HTMLSpanElement} */ (document.getElementById("panelReopenCount"));
 const moreWrap = /** @type {HTMLDivElement} */ (document.getElementById("moreWrap"));
 const moreButton = /** @type {HTMLButtonElement} */ (document.getElementById("moreButton"));
 const moreMenu = /** @type {HTMLDivElement} */ (document.getElementById("moreMenu"));
@@ -147,6 +148,10 @@ function render() {
   for (const button of annotationPills.querySelectorAll(".pill-close")) {
     const closeButton = /** @type {HTMLButtonElement} */ (button);
     closeButton.addEventListener("click", (event) => removeQueuedPrompt(Number(closeButton.dataset.index), event));
+  }
+  if (panelReopenCount) {
+    panelReopenCount.hidden = queued.length === 0;
+    panelReopenCount.textContent = String(queued.length);
   }
   updateSendState();
 }

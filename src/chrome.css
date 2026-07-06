@@ -673,22 +673,27 @@ body.lavish {
 }
 .panel-reopen {
   /* A drawer handle hugging the right edge: accent-colored so it stays
-     visible over any artifact, dark or light. */
+     visible over any artifact, dark or light. Long enough to carry the
+     queued-edits tally bubble below the label. */
   position: fixed;
   right: 0;
   top: calc(var(--bar-h) + 18px);
   z-index: 59;
   display: flex;
-  flex-direction: column;
+  /* writing-mode vertical-rl flips the flex axes: row = top-to-bottom, so
+     the tally bubble stacks BELOW the label inside the tab. */
+  flex-direction: row;
   align-items: center;
-  gap: 7px;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 118px;
   border: 0;
   background: var(--accent);
   color: var(--accent-ink);
   font: var(--w-bold) 12px var(--font-sans);
   letter-spacing: 0.04em;
   writing-mode: vertical-rl;
-  padding: 12px 7px;
+  padding: 14px 7px;
   border-radius: 10px 0 0 10px;
   cursor: pointer;
   box-shadow: -6px 4px 24px rgba(0, 0, 0, 0.35);
@@ -708,6 +713,23 @@ body.lavish {
 }
 .panel-reopen.has-news .reopen-dot {
   display: block;
+}
+.reopen-count {
+  /* The queued-edits tally: upright even inside the vertical handle. */
+  writing-mode: horizontal-tb;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent-ink);
+  color: var(--accent);
+  font: var(--w-bold) 11px var(--font-sans);
+  letter-spacing: 0;
+}
+.reopen-count[hidden] {
+  display: none;
 }
 .panel h2 {
   font-size: 15px;
