@@ -29,6 +29,13 @@ test("published package includes the installable skill", async () => {
   assert.ok(packageJson.files.includes("skills/lavish"));
 });
 
+test("published package exposes the separate UI review skill and executable", async () => {
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+
+  assert.equal(packageJson.bin["lavish-ui-review"], "dist/ui-review.mjs");
+  assert.ok(packageJson.files.includes("skills/lavish-ui-review"));
+});
+
 test("lavish-design agent skill is marked internal for skills CLI discovery", async () => {
   const skillMd = await readFile(new URL("../.agents/skills/lavish-design/SKILL.md", import.meta.url), "utf8");
   const frontmatter = skillMd.slice(4, skillMd.indexOf("\n---\n", 4));

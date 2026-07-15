@@ -25,9 +25,11 @@ const COMMANDS = new Set(["open", "poll", "end", "stop", "server", "playbook", "
 // SDK-reserved built-ins (e.g. `update`) must reach runAxiCli untouched; otherwise
 // the bare-arg normalization below would rewrite them into the hidden `open` command.
 const RESERVED = new Set(RESERVED_COMMANDS);
+const APP_ID = process.env.LAVISH_AXI_APP_ID || "lavish-axi";
+const COMMAND_NAME = process.env.LAVISH_AXI_COMMAND || "lavish-axi";
 const DESCRIPTION =
   "Lavish Editor helps agents turn rich HTML artifacts into collaborative human review surfaces. Whenever you are about to give user a complex response that will be easier to understand via a rich / interactive page, consider using Lavish Editor. " +
-  "First generate an interactive HTML artifact according to user request, then run `lavish-axi <html-file>` so the user can visually review it, annotate elements or selected text, queue prompts, and send feedback back through `lavish-axi poll`.";
+  `First generate an interactive HTML artifact according to user request, then run \`${COMMAND_NAME} <html-file>\` so the user can visually review it, annotate elements or selected text, queue prompts, and send feedback back through \`${COMMAND_NAME} poll\`.`;
 // Inlined at build time from package.json; falls back to reading package.json so source-run tests work.
 export const VERSION =
   process.env.LAVISH_AXI_BUILD_VERSION ||
@@ -39,7 +41,7 @@ export async function run(argv) {
   const isTopLevelHelp = argv.length === 1 && argv[0] === "--help";
   const command = telemetryCommandName(argv);
   const telemetry = initDefaultTelemetry({
-    app: "lavish-axi",
+    app: APP_ID,
     version: VERSION,
     platform: process.platform,
     arch: process.arch,
@@ -50,26 +52,28 @@ export async function run(argv) {
       description: DESCRIPTION,
       version: VERSION,
       argv: isTopLevelHelp ? [] : normalizedArgv,
-      topLevelHelp: TOP_LEVEL_HELP,
+      topLevelHelp: rewriteCommandIdentity(TOP_LEVEL_HELP),
       home: async () =>
-        createHomeOutput({
-          bin: process.argv[1] || "lavish-axi",
-          sessions: isTopLevelHelp ? [] : await visibleSessions(),
-          includeSessions: !isTopLevelHelp,
-        }),
+        rewriteCommandIdentity(
+          createHomeOutput({
+            bin: COMMAND_NAME,
+            sessions: isTopLevelHelp ? [] : await visibleSessions(),
+            includeSessions: !isTopLevelHelp,
+          }),
+        ),
       commands: {
-        open: openCommand,
-        poll: pollCommand,
-        end: endCommand,
-        stop: stopCommand,
-        playbook: playbookCommand,
-        design: designCommand,
-        setup: setupCommand,
-        server: serverCommand,
-        export: exportCommand,
-        share: shareCommand,
+        open: identifyCommand(openCommand),
+        poll: identifyCommand(pollCommand),
+        end: identifyCommand(endCommand),
+        stop: identifyCommand(stopCommand),
+        playbook: identifyCommand(playbookCommand),
+        design: identifyCommand(designCommand),
+        setup: identifyCommand(setupCommand),
+        server: identifyCommand(serverCommand),
+        export: identifyCommand(exportCommand),
+        share: identifyCommand(shareCommand),
       },
-      getCommandHelp,
+      getCommandHelp: (name) => rewriteCommandIdentity(getCommandHelp(name)),
     });
     telemetry.track("command", { command, status: "success" });
   } catch (error) {
@@ -78,6 +82,32 @@ export async function run(argv) {
   } finally {
     await telemetry.close(1_000);
   }
+}
+
+export function rewriteCommandIdentity(value, commandName = COMMAND_NAME) {
+  if (typeof value === "string") return value.replaceAll("lavish-axi", commandName);
+  if (Array.isArray(value)) return value.map((item) => rewriteCommandIdentity(item, commandName));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, rewriteCommandIdentity(item, commandName)]),
+  );
+}
+
+function identifyCommand(handler) {
+  return async (...args) => {
+    try {
+      return rewriteCommandIdentity(await handler(...args));
+    } catch (error) {
+      if (error instanceof AxiError) {
+        throw new AxiError(
+          rewriteCommandIdentity(error.message),
+          error.code,
+          rewriteCommandIdentity(error.suggestions),
+        );
+      }
+      throw error;
+    }
+  };
 }
 
 export function collapseHomeDirectory(file, home) {
@@ -836,7 +866,7 @@ async function ensureServer({ forceRestart = false } = {}) {
 // to step aside.
 export function shouldRestartServer(currentVersion, healthBody, forceRestart = false) {
   if (!healthBody || typeof healthBody !== "object") return false;
-  if (forceRestart && healthBody.app === "lavish-axi") return true;
+  if (forceRestart && healthBody.app === APP_ID) return true;
   if (typeof healthBody.version !== "string" || healthBody.version === "") return true;
   return healthBody.version !== currentVersion;
 }
@@ -853,13 +883,13 @@ function localSourceServerExists() {
 export function shouldKillProcessOnPort(currentVersion, healthBody) {
   if (!healthBody || typeof healthBody !== "object") return false;
   if (typeof healthBody.version !== "string" || healthBody.version === "") return true;
-  if (healthBody.app !== "lavish-axi") return false;
+  if (healthBody.app !== APP_ID) return false;
   return healthBody.version !== currentVersion;
 }
 
 async function canControlServerOnPort(port, healthBody, processMatchesLavish) {
   if (!healthBody || typeof healthBody !== "object") return false;
-  if (healthBody.app === "lavish-axi") return true;
+  if (healthBody.app === APP_ID) return true;
   if (typeof healthBody.version === "string" && healthBody.version !== "") return false;
   return processMatchesLavish(port);
 }

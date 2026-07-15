@@ -21,7 +21,23 @@ await esbuild.build({
   },
 });
 
+await esbuild.build({
+  entryPoints: ["bin/lavish-ui-review.js"],
+  outfile: "dist/ui-review.mjs",
+  bundle: true,
+  packages: "external",
+  platform: "node",
+  format: "esm",
+  target: "node22",
+  define: {
+    "process.env.LAVISH_AXI_BUILD_UMAMI_HOST": JSON.stringify(""),
+    "process.env.LAVISH_AXI_BUILD_UMAMI_WEBSITE_ID": JSON.stringify(""),
+    "process.env.LAVISH_AXI_BUILD_VERSION": JSON.stringify(packageJson.version),
+  },
+});
+
 await chmod("dist/cli.mjs", 0o755);
+await chmod("dist/ui-review.mjs", 0o755);
 await copyFile("src/chrome-client.js", "dist/chrome-client.js");
 await copyFile("src/chrome.css", "dist/chrome.css");
 await mkdir("dist/vendor", { recursive: true });

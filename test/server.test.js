@@ -851,13 +851,19 @@ test("chrome submits prompts queued during an in-flight submit", async () => {
   assert.match(js, /else if \(endAfterSubmit\) \{\n {8}endAfterSubmit = false;\n {8}endSession\(\)/);
 });
 
-test("/health reports the server version so clients can detect upgrades", async () => {
+test("/health reports the server identity and version so clients can detect upgrades", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "lavish-serve-"));
-  const server = await serve({ port: 0, stateFile: path.join(dir, "state.json"), version: "9.9.9-test" });
+  const server = await serve({
+    port: 0,
+    stateFile: path.join(dir, "state.json"),
+    version: "9.9.9-test",
+    appId: "lavish-ui-review",
+  });
   try {
     const res = await fetch(`http://127.0.0.1:${server.port}/health`);
     const body = await res.json();
     assert.equal(body.ok, true);
+    assert.equal(body.app, "lavish-ui-review");
     assert.equal(body.version, "9.9.9-test");
   } finally {
     await server.close();

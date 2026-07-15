@@ -5,11 +5,13 @@
   "description": "HTML is the new markdown. Lavish is the new editor for your HTML artifacts.",
   "type": "module",
   "bin": {
-    "lavish-axi": "dist/cli.mjs"
+    "lavish-axi": "dist/cli.mjs",
+    "lavish-ui-review": "dist/ui-review.mjs"
   },
   "files": [
     "dist",
     "skills/lavish",
+    "skills/lavish-ui-review",
     "lavish-editor-marketing/renders/lavish-editor-marketing.gif",
     "LICENSE",
     "workflow",

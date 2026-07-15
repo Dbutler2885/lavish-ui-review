@@ -33,6 +33,7 @@ import {
   resolveCopilotHookDir,
   resolveHookHomeDir,
   resolveServerEntry,
+  rewriteCommandIdentity,
   shutdownServerOnPort,
   shouldForceRestartForLocalBuild,
   shouldKillProcessOnPort,
@@ -54,6 +55,19 @@ function setupHooksEnv(homeDir, stateDir) {
 test("CLI version tracks package.json so release-please bumps reach the published binary", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   assert.equal(VERSION, packageJson.version);
+});
+
+test("command identity rewriting updates nested guidance without changing its structure", () => {
+  assert.deepEqual(
+    rewriteCommandIdentity(
+      { next_step: "Run `lavish-axi poll /tmp/ui.html`", help: ["Run `lavish-axi /tmp/ui.html`"] },
+      "lavish-ui-review",
+    ),
+    {
+      next_step: "Run `lavish-ui-review poll /tmp/ui.html`",
+      help: ["Run `lavish-ui-review /tmp/ui.html`"],
+    },
+  );
 });
 
 test("home output teaches agents when and how to use Lavish Editor", () => {

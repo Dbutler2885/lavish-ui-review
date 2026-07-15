@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createHomeOutput } from "../src/cli.js";
-import { SKILL_DESCRIPTION, createSkillMarkdown } from "../src/skill.js";
+import {
+  SKILL_DESCRIPTION,
+  UI_REVIEW_SKILL_DESCRIPTION,
+  createSkillMarkdown,
+  createUiReviewSkillMarkdown,
+} from "../src/skill.js";
 
 function skillCommandText(text) {
   return text.replaceAll("`lavish-axi", "`npx -y lavish-axi");
@@ -86,4 +91,21 @@ test("createSkillMarkdown uses non-interactive npx commands", () => {
   assert.match(md, /run it as `npx -y lavish-axi/);
   assert.doesNotMatch(md, /`npx lavish-axi/);
   assert.doesNotMatch(md, /Run `lavish-axi/);
+});
+
+test("createUiReviewSkillMarkdown is distinct from general-purpose Lavish", () => {
+  const md = createUiReviewSkillMarkdown();
+  const frontmatter = md.slice(4, md.indexOf("\n---\n", 4));
+
+  assert.match(frontmatter, /^name: lavish-ui-review$/m);
+  assert.ok(frontmatter.includes(UI_REVIEW_SKILL_DESCRIPTION));
+  assert.match(md, /mobile and desktop States/i);
+  assert.match(md, /general non-UI visual explanations.*original lavish skill/i);
+});
+
+test("UI review skill launches the fork from its GitHub repository", () => {
+  const md = createUiReviewSkillMarkdown();
+
+  assert.match(md, /npm exec --yes --prefer-online --package=github:Dbutler2885\/lavish-axi#main -- lavish-ui-review/);
+  assert.doesNotMatch(md, /`npx -y lavish-axi/);
 });

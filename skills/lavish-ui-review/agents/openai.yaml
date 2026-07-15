@@ -1,0 +1,7 @@
+interface:
+  display_name: "Lavish UI Review"
+  short_description: "Annotate UI States and iterate on code"
+  default_prompt: "Use $lavish-ui-review to open an iterative visual review of this interface."
+
+policy:
+  allow_implicit_invocation: true

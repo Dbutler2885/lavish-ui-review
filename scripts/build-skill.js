@@ -6,26 +6,39 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { createSkillMarkdown } from "../src/skill.js";
+import { createSkillMarkdown, createUiReviewSkillMarkdown } from "../src/skill.js";
 
-const target = new URL("../skills/lavish/SKILL.md", import.meta.url);
-const expected = createSkillMarkdown();
+const outputs = [
+  { target: new URL("../skills/lavish/SKILL.md", import.meta.url), expected: createSkillMarkdown() },
+  {
+    target: new URL("../skills/lavish-ui-review/SKILL.md", import.meta.url),
+    expected: createUiReviewSkillMarkdown(),
+  },
+];
 const check = process.argv.includes("--check");
 
 if (check) {
-  let actual = null;
-  try {
-    actual = await readFile(target, "utf8");
-  } catch {
-    // missing file falls through to the mismatch branch below
+  let stale = false;
+  for (const { target, expected } of outputs) {
+    let actual = null;
+    try {
+      actual = await readFile(target, "utf8");
+    } catch {
+      // Missing files fall through to the mismatch branch below.
+    }
+    if (actual !== expected) {
+      console.error(
+        `${fileURLToPath(target)} is out of date. Run \`node scripts/build-skill.js\` and commit the result.`,
+      );
+      stale = true;
+    }
   }
-  if (actual !== expected) {
-    console.error("skills/lavish/SKILL.md is out of date. Run `node scripts/build-skill.js` and commit the result.");
-    process.exit(1);
-  }
-  console.log("skills/lavish/SKILL.md is up to date.");
+  if (stale) process.exit(1);
+  console.log("Installable skills are up to date.");
 } else {
-  await mkdir(new URL("../skills/lavish/", import.meta.url), { recursive: true });
-  await writeFile(target, expected);
-  console.log(`Wrote ${fileURLToPath(target)}`);
+  for (const { target, expected } of outputs) {
+    await mkdir(new URL("./", target), { recursive: true });
+    await writeFile(target, expected);
+    console.log(`Wrote ${fileURLToPath(target)}`);
+  }
 }

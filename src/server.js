@@ -84,6 +84,7 @@ export async function serve({
   log = null,
   pollHeartbeatMs = 15_000,
   idleTimeoutMs = resolveIdleTimeoutMs(),
+  appId = process.env.LAVISH_AXI_APP_ID || "lavish-axi",
   host = bindHost(),
   linkHost: linkHostName = linkHost(),
 }) {
@@ -102,7 +103,7 @@ export async function serve({
   app.use(express.json({ limit: "2mb" }));
 
   app.get("/health", (req, res) => {
-    res.json({ ok: true, app: "lavish-axi", version });
+    res.json({ ok: true, app: appId, version });
   });
 
   let shutdownResolve;
