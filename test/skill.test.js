@@ -106,6 +106,9 @@ test("createUiReviewSkillMarkdown is distinct from general-purpose Lavish", () =
 test("UI review skill launches the fork from its GitHub repository", () => {
   const md = createUiReviewSkillMarkdown();
 
-  assert.match(md, /npm exec --yes --prefer-online --package=github:Dbutler2885\/lavish-axi#main -- lavish-ui-review/);
+  assert.match(
+    md,
+    /npm exec --yes --prefer-online --package=github:Dbutler2885\/lavish-axi#web-design -- lavish-ui-review/,
+  );
   assert.doesNotMatch(md, /`npx -y lavish-axi/);
 });
