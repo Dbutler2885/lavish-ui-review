@@ -10,14 +10,7 @@ export const STATE_DIR = path.join(ROOT, "state");
 // Stage machine: intent construction -> build (with the mandatory visual
 // self-review gate) -> iterate (the annotation/queue loop) -> approved
 // -> handoff (bundle sent downstream, e.g. to First Mate).
-export const STAGES = [
-  "new",
-  "intent",
-  "build",
-  "iterate",
-  "approved",
-  "handoff",
-];
+export const STAGES = ["new", "intent", "build", "iterate", "approved", "handoff"];
 
 // Job modes: how the mockup is sourced.
 //   redesign - reproduce an existing frontend faithfully, then change it

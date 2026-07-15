@@ -11,14 +11,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { execFile } from "node:child_process";
-import {
-  FORMATS,
-  STATE_DIR,
-  projectDir,
-  readProject,
-  timestamp,
-  writeProject,
-} from "./paths.mjs";
+import { FORMATS, STATE_DIR, projectDir, readProject, timestamp, writeProject } from "./paths.mjs";
 
 const slug = process.argv[2];
 if (!slug) {
@@ -43,13 +36,13 @@ const statePath = path.join(intakeDir, "intake-state.json");
 function defaultState() {
   const p = readProject(slug);
   return {
-    notes: [],            // [{ id, text, createdAt }]
-    inspo: [],            // [{ id, text, createdAt }] inspiration sources / style preferences
-    items: {},            // filename -> { note, inspo }
+    notes: [], // [{ id, text, createdAt }]
+    inspo: [], // [{ id, text, createdAt }] inspiration sources / style preferences
+    items: {}, // filename -> { note, inspo }
     format: p.format || { kind: "postcard", width: "5in", height: "7in", bleed: "0.125in", safeZone: "0.25in" },
     printIntent: "home-or-office-printer",
-    orientation: null,    // derived from width/height; kept for UI round-trip
-    sketchStrokes: [],    // [{ color, size, points: [[x,y],...] }] normalized 0..1
+    orientation: null, // derived from width/height; kept for UI round-trip
+    sketchStrokes: [], // [{ color, size, points: [[x,y],...] }] normalized 0..1
     finishedAt: null,
   };
 }
@@ -99,7 +92,9 @@ function imageDimensions(buf, name) {
         i += 2 + len;
       }
     }
-  } catch { /* dimensions stay unknown */ }
+  } catch {
+    /* dimensions stay unknown */
+  }
   return null;
 }
 
@@ -203,7 +198,9 @@ function writeNotesMd(manifest) {
       lines.push("");
       lines.push(`Type: ${file.category}${dims}, ${file.bytes} bytes.`);
       if (file.inspiration) {
-        lines.push("Marked by the client as inspiration/reference: treat it as a style cue and a clue for what tradition to research, not as content to place.");
+        lines.push(
+          "Marked by the client as inspiration/reference: treat it as a style cue and a clue for what tradition to research, not as content to place.",
+        );
       }
       if (file.note) {
         lines.push("");
@@ -250,8 +247,13 @@ function readBody(req, limitBytes = 100 * 1024 * 1024) {
 }
 
 const MIME = {
-  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
-  ".webp": "image/webp", ".svg": "image/svg+xml", ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".pdf": "application/pdf",
 };
 
 const server = http.createServer(async (req, res) => {
@@ -338,7 +340,7 @@ server.listen(argPort, "127.0.0.1", () => {
   fs.mkdirSync(STATE_DIR, { recursive: true });
   fs.writeFileSync(
     path.join(STATE_DIR, `intake-${slug}.json`),
-    JSON.stringify({ slug, port, pid: process.pid, startedAt: timestamp() }, null, 2) + "\n"
+    JSON.stringify({ slug, port, pid: process.pid, startedAt: timestamp() }, null, 2) + "\n",
   );
   console.log(`Intake UI for "${slug}" running at ${urlStr}`);
   console.log("Finish intake in the browser to write the packet and stop this server.");
@@ -346,7 +348,11 @@ server.listen(argPort, "127.0.0.1", () => {
 });
 
 process.on("exit", () => {
-  try { fs.unlinkSync(path.join(STATE_DIR, `intake-${slug}.json`)); } catch { /* already gone */ }
+  try {
+    fs.unlinkSync(path.join(STATE_DIR, `intake-${slug}.json`));
+  } catch {
+    /* already gone */
+  }
 });
 for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   process.on(sig, () => process.exit(0));

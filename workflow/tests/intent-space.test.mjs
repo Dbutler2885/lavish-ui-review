@@ -13,15 +13,19 @@ function makeProject() {
   fs.mkdirSync(path.join(dir, "intent", "files"), { recursive: true });
   fs.writeFileSync(
     path.join(dir, "project.json"),
-    JSON.stringify({
-      slug: "t",
-      title: "T",
-      stage: "intent",
-      mode: null,
-      targetRepo: null,
-      currentMockups: [],
-      history: [],
-    }, null, 2)
+    JSON.stringify(
+      {
+        slug: "t",
+        title: "T",
+        stage: "intent",
+        mode: null,
+        targetRepo: null,
+        currentMockups: [],
+        history: [],
+      },
+      null,
+      2,
+    ),
   );
   return dir;
 }
@@ -105,7 +109,12 @@ test("assemble returns the union: indexed, unindexed, and no deleted entries", (
 
 test("a grill-me artifact deposits and assembles alongside intent UI deposits (slice 11)", () => {
   const dir = makeProject();
-  deposit(dir, { name: "grill-me-brief.md", content: "# Brief\nDecided: dense dashboard.\n", kind: "grill-me", tool: "grill-me" });
+  deposit(dir, {
+    name: "grill-me-brief.md",
+    content: "# Brief\nDecided: dense dashboard.\n",
+    kind: "grill-me",
+    tool: "grill-me",
+  });
   deposit(dir, { name: "files/inspo.png", content: Buffer.from([1]), kind: "image", tool: "intent-ui" });
   const packet = assemble(dir);
   const byFile = Object.fromEntries(packet.deposits.map((d) => [d.file, d]));

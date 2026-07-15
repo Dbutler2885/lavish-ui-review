@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Screen: replace-me</title>
-<!--
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Screen: replace-me</title>
+    <!--
   Mockup contract (see AGENTS.md section 7):
   - One file = one screen. In-place states (modals, expansions, tabs, error
     states) are built INTO this file as real clickable HTML. Navigation to a
@@ -19,50 +19,59 @@
   - No blurred shadows if this mockup might ever be printed; for screen work
     they are fine.
 -->
-<style>
-  :root {
-    /* Design tokens for this mockup live here. */
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; }
-  /* The fixed design canvas. The review wrapper reads this width/height. */
-  .screen {
-    position: relative; overflow: hidden;
-    width: 1280px; height: 800px;
-    background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif;
-  }
-  [hidden] { display: none !important; }
-</style>
-</head>
-<body>
-<div class="screen" data-state="default">
+    <style>
+      :root {
+        /* Design tokens for this mockup live here. */
+        --bg: #ffffff;
+        --fg: #1a1a1a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      /* The fixed design canvas. The review wrapper reads this width/height. */
+      .screen {
+        position: relative;
+        overflow: hidden;
+        width: 1280px;
+        height: 800px;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, sans-serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen" data-state="default">
+      <main>
+        <!-- Screen content goes here. -->
+      </main>
 
-  <main>
-    <!-- Screen content goes here. -->
-  </main>
-
-  <!-- Example in-place state: a modal, hidden by default.
+      <!-- Example in-place state: a modal, hidden by default.
   <div class="veil" data-state="modal-open" hidden></div>
   -->
-</div>
+    </div>
 
-<script>
-  // State contract: setState(id) marks the .screen root and shows only the
-  // [data-state=id] roots inside it; the renderer and the review wrapper
-  // request states via #state=<id> / window.setState. No storage access -
-  // the Lavish sandbox has no allow-same-origin and localStorage THROWS.
-  var screenRoot = document.querySelector(".screen");
-  function setState(id) {
-    screenRoot.dataset.state = id;
-    screenRoot.querySelectorAll("[data-state]").forEach(function (el) {
-      el.hidden = el.dataset.state !== id;
-    });
-  }
-  window.setState = setState;
-  var m = location.hash.match(/#state=([\w-]+)/);
-  if (m) setState(decodeURIComponent(m[1]));
-</script>
-</body>
+    <script>
+      // State contract: setState(id) marks the .screen root and shows only the
+      // [data-state=id] roots inside it; the renderer and the review wrapper
+      // request states via #state=<id> / window.setState. No storage access -
+      // the Lavish sandbox has no allow-same-origin and localStorage THROWS.
+      var screenRoot = document.querySelector(".screen");
+      function setState(id) {
+        screenRoot.dataset.state = id;
+        screenRoot.querySelectorAll("[data-state]").forEach(function (el) {
+          el.hidden = el.dataset.state !== id;
+        });
+      }
+      window.setState = setState;
+      var m = location.hash.match(/#state=([\w-]+)/);
+      if (m) setState(decodeURIComponent(m[1]));
+    </script>
+  </body>
 </html>

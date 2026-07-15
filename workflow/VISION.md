@@ -127,17 +127,17 @@ This deserves its own artifacts before code generation: an interface contract, a
 
 The fork inherits the print pipeline. Here is the intended reorientation (not yet built):
 
-| Print (inherited) | Web (target) |
-|---|---|
-| `bin/pdf-new.sh` + `lib/formats.json` (print sizes, bleed, safe zone) | project creation with web presets (viewport/breakpoint targets, component vs page vs app) |
-| `bin/pdf-intake.sh` (files, notes, print format, blocking sketch) | intent construction: text-first and visual-first intake, inspiration tagging, wireframe sketch |
-| `bin/pdf-proof.sh` + `lib/proof-wrap.mjs` (inch rulers, trim/bleed/safe-zone overlays, calibration) | review surface: render + Konva markup layer; overlays become annotation, not print guides |
-| `bin/pdf-check.sh` + `lib/sandbox-check.mjs` (render HTML to PNG under Lavish sandbox) | keep: render-to-image is core to the comparison + review surfaces |
-| `bin/pdf-export.sh` + `lib/export-pdf.mjs` (PDF at physical size, MediaBox verify) | drop or replace: web has no physical export; may become screenshot/deploy/publish |
-| `bin/pdf-asset.sh` (crop/resize to print DPI) | keep/adapt: image prep, crops, boxed-region generation for annotations |
-| `bin/pdf-fonts.sh` + `assets/fonts/` (~95 embeddable families) | keep: still useful; web fonts and specimen previews |
-| stage machine (new -> intake -> design-language -> drafting -> proofing -> exported) | reoriented stages: intent -> design language -> wireframe/interaction -> draft -> visual review loop -> ship |
-| `AGENTS.md` operating manual | rewritten as the web operating manual |
+| Print (inherited)                                                                                   | Web (target)                                                                                                 |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `bin/pdf-new.sh` + `lib/formats.json` (print sizes, bleed, safe zone)                               | project creation with web presets (viewport/breakpoint targets, component vs page vs app)                    |
+| `bin/pdf-intake.sh` (files, notes, print format, blocking sketch)                                   | intent construction: text-first and visual-first intake, inspiration tagging, wireframe sketch               |
+| `bin/pdf-proof.sh` + `lib/proof-wrap.mjs` (inch rulers, trim/bleed/safe-zone overlays, calibration) | review surface: render + Konva markup layer; overlays become annotation, not print guides                    |
+| `bin/pdf-check.sh` + `lib/sandbox-check.mjs` (render HTML to PNG under Lavish sandbox)              | keep: render-to-image is core to the comparison + review surfaces                                            |
+| `bin/pdf-export.sh` + `lib/export-pdf.mjs` (PDF at physical size, MediaBox verify)                  | drop or replace: web has no physical export; may become screenshot/deploy/publish                            |
+| `bin/pdf-asset.sh` (crop/resize to print DPI)                                                       | keep/adapt: image prep, crops, boxed-region generation for annotations                                       |
+| `bin/pdf-fonts.sh` + `assets/fonts/` (~95 embeddable families)                                      | keep: still useful; web fonts and specimen previews                                                          |
+| stage machine (new -> intake -> design-language -> drafting -> proofing -> exported)                | reoriented stages: intent -> design language -> wireframe/interaction -> draft -> visual review loop -> ship |
+| `AGENTS.md` operating manual                                                                        | rewritten as the web operating manual                                                                        |
 
 New pieces with no print ancestor: the Konva markup layer, the annotation JSON model, the side-by-side comparison composer, the edit queue, and the task-packet builder.
 

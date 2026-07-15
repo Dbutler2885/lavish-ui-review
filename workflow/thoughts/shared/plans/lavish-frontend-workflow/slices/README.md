@@ -4,22 +4,22 @@ Parent PRD: [../prd.md](../prd.md)
 
 ## Overview
 
-| # | Slice | Type | Status | Blocked by |
-|---|-------|------|--------|------------|
-| 01 | Workspace reorientation skeleton | AFK | Done | None |
-| 02 | Intent-space store | AFK | Done | 01 |
-| 03 | Tracer bullet - text intent to presented mockup | HITL | Built, pending approval | 02 |
-| 04 | Unit-of-guidance model | AFK | Done | None |
-| 05 | Image-packet generator | AFK | Done | 04 |
-| 06 | Edit-queue engine | AFK | Done | 04 |
-| 07 | Lavish fork - pixel drawing layer | HITL | Built, pending sign-off | 04 |
-| 08 | Lavish fork - DOM binding and unit cueing | HITL | Built, pending sign-off | 07 |
-| 09 | Iterate loop integration | HITL | Not started | 03, 05, 06, 08 |
-| 10 | Intent UI - visual intake | HITL | Not started | 02, 04, 05 |
-| 11 | Grill-me integration | AFK | Done | 02 |
-| 12 | Target checkout and existing-code modes | HITL | Not started | 03 |
-| 13 | Multi-state mockups and state-aware annotation | AFK | Not started | 09 |
-| 14 | Approval gate and First Mate handoff | AFK | Not started | 09 |
+| #   | Slice                                           | Type | Status                  | Blocked by     |
+| --- | ----------------------------------------------- | ---- | ----------------------- | -------------- |
+| 01  | Workspace reorientation skeleton                | AFK  | Done                    | None           |
+| 02  | Intent-space store                              | AFK  | Done                    | 01             |
+| 03  | Tracer bullet - text intent to presented mockup | HITL | Built, pending approval | 02             |
+| 04  | Unit-of-guidance model                          | AFK  | Done                    | None           |
+| 05  | Image-packet generator                          | AFK  | Done                    | 04             |
+| 06  | Edit-queue engine                               | AFK  | Done                    | 04             |
+| 07  | Lavish fork - pixel drawing layer               | HITL | Built, pending sign-off | 04             |
+| 08  | Lavish fork - DOM binding and unit cueing       | HITL | Built, pending sign-off | 07             |
+| 09  | Iterate loop integration                        | HITL | Not started             | 03, 05, 06, 08 |
+| 10  | Intent UI - visual intake                       | HITL | Not started             | 02, 04, 05     |
+| 11  | Grill-me integration                            | AFK  | Done                    | 02             |
+| 12  | Target checkout and existing-code modes         | HITL | Not started             | 03             |
+| 13  | Multi-state mockups and state-aware annotation  | AFK  | Not started             | 09             |
+| 14  | Approval gate and First Mate handoff            | AFK  | Not started             | 09             |
 
 ## Slice details
 

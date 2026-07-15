@@ -87,7 +87,8 @@ export function problems(unit) {
       }
     }
     if (m?.group != null) {
-      if (typeof m.group !== "string" || m.group.length === 0) errs.push(`marks[${i}]: group must be a non-empty string`);
+      if (typeof m.group !== "string" || m.group.length === 0)
+        errs.push(`marks[${i}]: group must be a non-empty string`);
       else groupIds.add(m.group);
     }
     if (m?.tag != null && typeof m.tag !== "string") errs.push(`marks[${i}]: tag must be a string`);
@@ -105,7 +106,8 @@ export function problems(unit) {
         errs.push(`notes[${i}]: bind targets must be strings`);
       } else if (b.startsWith("ref:")) {
         const idx = Number(b.slice(4));
-        if (!Number.isInteger(idx) || idx < 0 || idx >= refs.length) errs.push(`notes[${i}]: bind "${b}" is out of range`);
+        if (!Number.isInteger(idx) || idx < 0 || idx >= refs.length)
+          errs.push(`notes[${i}]: bind "${b}" is out of range`);
       } else if (!markIds.has(b) && !groupIds.has(b)) {
         errs.push(`notes[${i}]: bind "${b}" matches no mark id or group id`);
       }
@@ -149,7 +151,7 @@ export function listRefs(unit) {
   return (unit.refs ?? []).map((r, i) =>
     r.type === "dom"
       ? { index: i, type: "dom", target: r.selector }
-      : { index: i, type: "region", target: `${r.image}@${r.rect.x},${r.rect.y},${r.rect.w}x${r.rect.h}` }
+      : { index: i, type: "region", target: `${r.image}@${r.rect.x},${r.rect.y},${r.rect.w}x${r.rect.h}` },
   );
 }
 

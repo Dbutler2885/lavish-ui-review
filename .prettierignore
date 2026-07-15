@@ -8,3 +8,7 @@ package-lock.json
 CHANGELOG.md
 .agents
 .claude/settings.local.json
+artifacts
+workflow/data
+workflow/projects
+workflow/state

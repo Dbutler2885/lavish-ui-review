@@ -65,7 +65,9 @@ export function loadPlan(batch, items) {
   });
   const uncovered = uncoveredUnits(batch, items);
   if (uncovered.length > 0) {
-    throw new Error(`Plan leaves units unaddressed: ${uncovered.join(", ")}. Every unit must be cited by at least one item.`);
+    throw new Error(
+      `Plan leaves units unaddressed: ${uncovered.join(", ")}. Every unit must be cited by at least one item.`,
+    );
   }
   return {
     ...batch,
@@ -91,7 +93,9 @@ export function next(batch) {
   }
   const idx = batch.items.findIndex((it) => it.status === "pending");
   if (idx === -1) return { batch, item: null };
-  const items = batch.items.map((it, i) => (i === idx ? { ...it, status: "active", startedAt: new Date().toISOString() } : it));
+  const items = batch.items.map((it, i) =>
+    i === idx ? { ...it, status: "active", startedAt: new Date().toISOString() } : it,
+  );
   const updated = { ...batch, items };
   return { batch: updated, item: items[idx] };
 }
@@ -103,10 +107,15 @@ export function complete(batch, itemId, { result = "" } = {}) {
   if (idx === -1) throw new Error(`No such item: "${itemId}"`);
   if (batch.items[idx].status !== "active") throw new Error(`Item "${itemId}" is not active.`);
   const items = batch.items.map((it, i) =>
-    i === idx ? { ...it, status: "done", result, completedAt: new Date().toISOString() } : it
+    i === idx ? { ...it, status: "done", result, completedAt: new Date().toISOString() } : it,
   );
   const done = items.every((it) => it.status === "done");
-  return { ...batch, items, status: done ? "done" : "executing", ...(done ? { completedAt: new Date().toISOString() } : {}) };
+  return {
+    ...batch,
+    items,
+    status: done ? "done" : "executing",
+    ...(done ? { completedAt: new Date().toISOString() } : {}),
+  };
 }
 
 // The audit trail: which units each item addressed, in execution order.

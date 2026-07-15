@@ -19,7 +19,19 @@ import {
 } from "../lib/queue.mjs";
 
 const unit = (id) =>
-  createUnit({ id, marks: [{ id: `${id}-m1`, type: "box", points: [{ x: 0, y: 0 }, { x: 5, y: 5 }] }] });
+  createUnit({
+    id,
+    marks: [
+      {
+        id: `${id}-m1`,
+        type: "box",
+        points: [
+          { x: 0, y: 0 },
+          { x: 5, y: 5 },
+        ],
+      },
+    ],
+  });
 
 function plannedBatch() {
   const batch = createBatch([unit("A1"), unit("A2"), unit("A3")]);

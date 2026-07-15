@@ -51,10 +51,19 @@ const targetName = path.basename(targetPath);
 const shotStem = targetName.replace(/\.html?$/i, "") + "-sandbox-check";
 
 const MIME = {
-  ".html": "text/html", ".css": "text/css", ".js": "text/javascript",
-  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-  ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp",
-  ".ttf": "font/ttf", ".otf": "font/otf", ".woff": "font/woff", ".woff2": "font/woff2",
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "text/javascript",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".ttf": "font/ttf",
+  ".otf": "font/otf",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
 };
 
 // Oversized print pages capture the whole surface; the wrapper is printed
@@ -106,7 +115,9 @@ const CHROME_CANDIDATES = [
 let chrome = null;
 for (const candidate of CHROME_CANDIDATES) {
   try {
-    if (candidate.includes("/") ? fs.existsSync(candidate) : (execFileSync("which", [candidate], { stdio: "pipe" }), true)) {
+    if (
+      candidate.includes("/") ? fs.existsSync(candidate) : (execFileSync("which", [candidate], { stdio: "pipe" }), true)
+    ) {
       chrome = candidate;
       break;
     }
@@ -128,16 +139,26 @@ server.listen(0, "127.0.0.1", async () => {
     }
     // Chrome must run async: a sync spawn would block the event loop and
     // deadlock the HTTP server that Chrome is trying to fetch from.
-    await execFileP(chrome, [
-      "--headless",
-      "--disable-gpu",
-      "--no-pdf-header-footer",
-      "--virtual-time-budget=8000",
-      "--print-to-pdf=" + tmpPdf,
-      `http://127.0.0.1:${port}/wrapper.html`,
-    ], { timeout: 120000 });
-    execFileSync("pdftoppm", ["-png", "-r", "72", tmpPdf, path.join(serveDir, shotStem)], { stdio: "pipe", timeout: 60000 });
-    const shots = fs.readdirSync(serveDir).filter((f) => f.startsWith(shotStem) && f.endsWith(".png")).sort();
+    await execFileP(
+      chrome,
+      [
+        "--headless",
+        "--disable-gpu",
+        "--no-pdf-header-footer",
+        "--virtual-time-budget=8000",
+        "--print-to-pdf=" + tmpPdf,
+        `http://127.0.0.1:${port}/wrapper.html`,
+      ],
+      { timeout: 120000 },
+    );
+    execFileSync("pdftoppm", ["-png", "-r", "72", tmpPdf, path.join(serveDir, shotStem)], {
+      stdio: "pipe",
+      timeout: 60000,
+    });
+    const shots = fs
+      .readdirSync(serveDir)
+      .filter((f) => f.startsWith(shotStem) && f.endsWith(".png"))
+      .sort();
     if (shots.length === 0) throw new Error("pdftoppm produced no PNG");
     for (const shot of shots) console.log(path.join(serveDir, shot));
     console.log("Now LOOK at these: real fonts, full layout, nothing collapsed or clipped.");

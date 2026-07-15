@@ -4,20 +4,20 @@ A curated, catalog-driven library of embeddable print fonts, all OFL or Apache l
 
 `catalog.json` is the source of truth: ~95 families across these categories, each with a one-line role note.
 
-| Category | What it covers |
-| --- | --- |
-| serif | body-text serifs for books, letters, editorial |
-| serif-display | didones, engraved caps, formal headline serifs |
-| slab | slab serifs from sturdy to vintage |
-| sans | body-text sans workhorses |
-| sans-display | geometric and deco display sans |
-| condensed | space-tight gothics for posters, dates, venues |
-| display | fat poster faces, retro, western, deco, marquee |
-| script | brush and casual scripts |
-| script-formal | calligraphic scripts for invitations |
-| handwriting | marker, chalk, and hand-note faces |
-| blackletter-stencil | blackletter and stencil |
-| typewriter-mono | typewriter and retro mono |
+| Category            | What it covers                                  |
+| ------------------- | ----------------------------------------------- |
+| serif               | body-text serifs for books, letters, editorial  |
+| serif-display       | didones, engraved caps, formal headline serifs  |
+| slab                | slab serifs from sturdy to vintage              |
+| sans                | body-text sans workhorses                       |
+| sans-display        | geometric and deco display sans                 |
+| condensed           | space-tight gothics for posters, dates, venues  |
+| display             | fat poster faces, retro, western, deco, marquee |
+| script              | brush and casual scripts                        |
+| script-formal       | calligraphic scripts for invitations            |
+| handwriting         | marker, chalk, and hand-note faces              |
+| blackletter-stencil | blackletter and stencil                         |
+| typewriter-mono     | typewriter and retro mono                       |
 
 ## Commands
 

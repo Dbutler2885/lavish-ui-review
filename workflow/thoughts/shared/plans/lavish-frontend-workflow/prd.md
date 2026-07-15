@@ -11,7 +11,7 @@ See `VISION.md` for the narrative statement of intent this PRD formalizes.
 When I want to change or design a web frontend, describing the change in words is the wrong medium.
 The product is visual, so my feedback should be visual too.
 Today, the best method I have is to ask an agent to render a mockup in Lavish and mark it up, but Lavish only lets me attach a text note to a DOM element.
-That misses the thing I actually need: to show the model *exactly* what is wrong by pointing at it in the rendered pixels and drawing the change I want, then have that land as a precise, tracked edit.
+That misses the thing I actually need: to show the model _exactly_ what is wrong by pointing at it in the rendered pixels and drawing the change I want, then have that land as a precise, tracked edit.
 
 Two deeper gaps sit underneath that.
 First, before anything gets built, I have to construct my intent, and I do not want to do that with cognitive-heavy back-and-forth or by approving abstract style choices I have no opinion on yet.
@@ -83,6 +83,7 @@ When, and only when, the user approves the mockup, the finished mockup plus its 
 ## Implementation Decisions
 
 ### Architecture and framing
+
 - The deliverable of this workflow is an HTML mockup artifact (a set of per-screen mockups) plus its intent packet, not production code.
 - The mockup is a mockup of the real thing, derived either from existing code (redesign, extend) or from intent alone (build new).
 - Syncing the approved mockup back into real production source is out of scope; it is First Mate's job downstream.
@@ -131,12 +132,14 @@ UI surfaces (shallow to unit-test; verified through the data they emit and by ey
   Generalizes the existing print `pdf-check` "render, look at the PNGs, self-review before showing the client" pattern to the frontend mockup.
 
 ### Stage machine
+
 - The reoriented stages are: intent construction, build (with the loop-1 self-review gate), iterate (the loop-2 queue), approved, handoff.
 - There is no design-language / style-board stage.
   The style board is dropped because the user does not have a fully formed final product in mind and should not be asked for abstract style opinion; reacting to a concrete first mockup is cheaper and gets to iteration faster.
 - The intent UI is always the front door; everything flows through the shared intent space so context is not muddled.
 
 ### Markup and annotation semantics
+
 - One shared drawing/annotation vocabulary is used by both UIs.
 - A selection box is not special; it is a vector mark that means "look at this area."
 - The only substrate difference between the two UIs: in the intent UI a reference is a pixel region of a static image; on the Lavish-derived surface a reference can also bind to a live DOM element.
@@ -144,6 +147,7 @@ UI surfaces (shallow to unit-test; verified through the data they emit and by ey
 - Two convergence loops exist: loop one is the agent building and self-reviewing toward the intent packet before the user sees it (bounded, one strong build plus a mandatory visual self-review pass; a dedicated multi-agent corrector is deferred); loop two is the user-driven annotation queue.
 
 ### Multi-agent scope
+
 - V1 leaves out the intentional multi-agent recursive self-improvement (the dedicated corrector sub-agent).
 - V1 keeps the essential kernel: the model must render and look at its own output against a specific critique prompt before it can advance.
 

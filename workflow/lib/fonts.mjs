@@ -44,7 +44,9 @@ function fontPath(entry, v) {
 // ------------------------------------------------------------------- sync
 
 async function sync(force) {
-  let ok = 0, skipped = 0, failed = 0;
+  let ok = 0,
+    skipped = 0,
+    failed = 0;
   for (const entry of catalog.families) {
     const missing = variants(entry).filter((v) => force || !fs.existsSync(fontPath(entry, v)));
     if (missing.length === 0) {
@@ -145,7 +147,7 @@ function use(slug, familyQuery) {
     console.error(
       matches.length === 0
         ? `No catalog family matches "${familyQuery}".`
-        : `Ambiguous: ${matches.map((m) => m.family).join(", ")}`
+        : `Ambiguous: ${matches.map((m) => m.family).join(", ")}`,
     );
     process.exit(1);
   }
@@ -162,7 +164,7 @@ function use(slug, familyQuery) {
     const name = path.basename(src);
     fs.copyFileSync(src, path.join(destDir, name));
     rules.push(
-      `@font-face {\n  font-family: "${entry.family}";\n  src: url("assets/${name}");\n  font-weight: ${v.weight};\n  font-style: ${v.italic ? "italic" : "normal"};\n}`
+      `@font-face {\n  font-family: "${entry.family}";\n  src: url("assets/${name}");\n  font-weight: ${v.weight};\n  font-style: ${v.italic ? "italic" : "normal"};\n}`,
     );
   }
   console.log(`Copied ${variants(entry).length} file(s) to projects/${slug}/mockups/assets/`);

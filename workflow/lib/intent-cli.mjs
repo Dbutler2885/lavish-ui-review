@@ -25,7 +25,7 @@ try {
       if (!source || source.startsWith("--")) usage();
       const opts = {};
       for (let i = 1; i < rest.length; i++) {
-        if (rest[i].startsWith("--")) opts[rest[i].slice(2)] = rest[i + 1], i++;
+        if (rest[i].startsWith("--")) ((opts[rest[i].slice(2)] = rest[i + 1]), i++);
       }
       const entry = deposit(dir, {
         name: opts.name || path.join("files", path.basename(source)),

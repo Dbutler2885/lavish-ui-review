@@ -3,14 +3,7 @@
 //        [--mode redesign|extend|new] [--target-repo <git-url-or-path>]
 import fs from "node:fs";
 import path from "node:path";
-import {
-  MODES,
-  projectDir,
-  projectJsonPath,
-  slugify,
-  timestamp,
-  writeProject,
-} from "./paths.mjs";
+import { MODES, projectDir, projectJsonPath, slugify, timestamp, writeProject } from "./paths.mjs";
 
 const args = process.argv.slice(2);
 if (args.length === 0 || args[0].startsWith("--")) {
@@ -21,7 +14,7 @@ if (args.length === 0 || args[0].startsWith("--")) {
 const slug = slugify(args[0]);
 const opts = {};
 for (let i = 1; i < args.length; i++) {
-  if (args[i].startsWith("--")) opts[args[i].slice(2)] = args[i + 1], i++;
+  if (args[i].startsWith("--")) ((opts[args[i].slice(2)] = args[i + 1]), i++);
 }
 
 if (fs.existsSync(projectJsonPath(slug))) {

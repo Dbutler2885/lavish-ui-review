@@ -24,8 +24,7 @@ function inspect(slug) {
   // intent/ deposits: anything except the (possibly empty) files/ subdir,
   // plus dropped files inside files/.
   const intentDeposits =
-    entries(path.join(dir, "intent"), (f) => f !== "files").length +
-    entries(path.join(dir, "intent", "files")).length;
+    entries(path.join(dir, "intent"), (f) => f !== "files").length + entries(path.join(dir, "intent", "files")).length;
   const disk = {
     intentDeposits,
     mockups: entries(path.join(dir, "mockups"), (f) => f.endsWith(".html")),
@@ -59,9 +58,11 @@ function report(slug) {
   if (disk.queue > 0) console.log(`  queue: ${disk.queue} item(s)`);
   if (disk.handoff > 0) console.log(`  handoff: ${disk.handoff} file(s) bundled`);
   // Rank stages so we can tell when the folder is ahead of the state file.
-  const rank = { "new": 0, "intent": 1, "build": 2, "iterate": 3, "approved": 4, "handoff": 5 };
+  const rank = { new: 0, intent: 1, build: 2, iterate: 3, approved: 4, handoff: 5 };
   if ((rank[implied] ?? 0) > (rank[p.stage] ?? 0)) {
-    console.log(`  NOTE: folder contents imply stage "${implied}" but project.json says "${p.stage}" - state file may be stale.`);
+    console.log(
+      `  NOTE: folder contents imply stage "${implied}" but project.json says "${p.stage}" - state file may be stale.`,
+    );
   }
 }
 

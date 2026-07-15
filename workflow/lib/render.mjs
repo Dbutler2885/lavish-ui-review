@@ -65,8 +65,7 @@ export async function renderMockup(slug, screenName, { state = "default", width 
   const mockupsDir = path.join(projectDir(slug), "mockups");
   const screenPath = path.join(mockupsDir, screenName);
   if (!fs.existsSync(screenPath)) throw new Error(`No such mockup: ${screenPath}`);
-  const outPath =
-    out ?? path.join(projectDir(slug), "renders", `${screenName.replace(/\.html?$/i, "")}-${state}.png`);
+  const outPath = out ?? path.join(projectDir(slug), "renders", `${screenName.replace(/\.html?$/i, "")}-${state}.png`);
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
   const warnings = lintSandbox(fs.readFileSync(screenPath, "utf8"));
@@ -78,18 +77,26 @@ export async function renderMockup(slug, screenName, { state = "default", width 
   fs.writeFileSync(
     wrapPath,
     `<!doctype html><meta charset="utf-8"><style>html,body{margin:0}iframe{border:0;display:block;width:${width}px;height:${height}px}</style>` +
-      `<iframe sandbox="allow-scripts" src="${encodeURIComponent(screenName)}${hash}"></iframe>`
+      `<iframe sandbox="allow-scripts" src="${encodeURIComponent(screenName)}${hash}"></iframe>`,
   );
   const chrome = findChrome();
   try {
-    execFileSync(chrome, [
-      // NOTE: no --user-data-dir and no http URL - both hang headless Brave
-      // on this machine (see header).
-      "--headless", "--disable-gpu", "--allow-file-access-from-files",
-      `--screenshot=${outPath}`, `--window-size=${width},${height}`,
-      "--default-background-color=FFFFFFFF", "--hide-scrollbars",
-      `file://${wrapPath}`,
-    ], { stdio: "pipe", timeout: 30000 });
+    execFileSync(
+      chrome,
+      [
+        // NOTE: no --user-data-dir and no http URL - both hang headless Brave
+        // on this machine (see header).
+        "--headless",
+        "--disable-gpu",
+        "--allow-file-access-from-files",
+        `--screenshot=${outPath}`,
+        `--window-size=${width},${height}`,
+        "--default-background-color=FFFFFFFF",
+        "--hide-scrollbars",
+        `file://${wrapPath}`,
+      ],
+      { stdio: "pipe", timeout: 30000 },
+    );
   } finally {
     fs.unlinkSync(wrapPath);
   }
@@ -107,7 +114,7 @@ if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   const opts = {};
   const positional = [];
   for (let i = 0; i < rest.length; i++) {
-    if (rest[i].startsWith("--")) opts[rest[i].slice(2)] = rest[i + 1], i++;
+    if (rest[i].startsWith("--")) ((opts[rest[i].slice(2)] = rest[i + 1]), i++);
     else positional.push(rest[i]);
   }
   const project = readProject(slug);
@@ -130,6 +137,9 @@ if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
       for (const w of warnings) console.error(`WARN: ${w}`);
       console.log(png);
     },
-    (err) => { console.error(err.message); process.exit(1); }
+    (err) => {
+      console.error(err.message);
+      process.exit(1);
+    },
   );
 }

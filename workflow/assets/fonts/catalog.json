@@ -1,111 +1,610 @@
 {
   "comment": "Source of truth for the shared font library. bin/pdf-fonts.sh sync downloads static TTFs from the Google Fonts API into <category>/ subdirectories. All families are OFL or Apache licensed. weights lists the static weights to fetch; italic true also fetches italics for those weights.",
   "families": [
-    { "family": "EB Garamond", "category": "serif", "weights": [400, 700], "italic": true, "notes": "old-style classic; elegant book and invitation feel" },
-    { "family": "Cormorant Garamond", "category": "serif", "weights": [400, 700], "italic": true, "notes": "delicate display-leaning garamond; luxury" },
-    { "family": "Libre Baskerville", "category": "serif", "weights": [400, 700], "italic": true, "notes": "high-contrast transitional; sturdy at text sizes" },
-    { "family": "Lora", "category": "serif", "weights": [400, 700], "italic": true, "notes": "calligraphic-rooted workhorse body serif" },
-    { "family": "Merriweather", "category": "serif", "weights": [400, 700], "italic": true, "notes": "robust; stays readable very small" },
-    { "family": "Source Serif 4", "category": "serif", "weights": [400, 700], "italic": true, "notes": "contemporary neutral text serif" },
-    { "family": "Spectral", "category": "serif", "weights": [400, 700], "italic": true, "notes": "editorial, slightly condensed" },
+    {
+      "family": "EB Garamond",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "old-style classic; elegant book and invitation feel"
+    },
+    {
+      "family": "Cormorant Garamond",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "delicate display-leaning garamond; luxury"
+    },
+    {
+      "family": "Libre Baskerville",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "high-contrast transitional; sturdy at text sizes"
+    },
+    {
+      "family": "Lora",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "calligraphic-rooted workhorse body serif"
+    },
+    {
+      "family": "Merriweather",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "robust; stays readable very small"
+    },
+    {
+      "family": "Source Serif 4",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "contemporary neutral text serif"
+    },
+    {
+      "family": "Spectral",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "editorial, slightly condensed"
+    },
     { "family": "Crimson Pro", "category": "serif", "weights": [400, 700], "italic": true, "notes": "quiet book face" },
-    { "family": "PT Serif", "category": "serif", "weights": [400, 700], "italic": true, "notes": "universal workhorse" },
-    { "family": "Alegreya", "category": "serif", "weights": [400, 700], "italic": true, "notes": "literary with a lively rhythm" },
-    { "family": "Literata", "category": "serif", "weights": [400, 700], "italic": true, "notes": "made for long-form reading" },
-    { "family": "Libre Caslon Text", "category": "serif", "weights": [400, 700], "italic": true, "italicWeights": [400], "notes": "warm classic; early-American print flavor" },
+    {
+      "family": "PT Serif",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "universal workhorse"
+    },
+    {
+      "family": "Alegreya",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "literary with a lively rhythm"
+    },
+    {
+      "family": "Literata",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "made for long-form reading"
+    },
+    {
+      "family": "Libre Caslon Text",
+      "category": "serif",
+      "weights": [400, 700],
+      "italic": true,
+      "italicWeights": [400],
+      "notes": "warm classic; early-American print flavor"
+    },
 
-    { "family": "Playfair Display", "category": "serif-display", "weights": [400, 700], "italic": true, "notes": "didone editorial headline; fashion-magazine" },
-    { "family": "Abril Fatface", "category": "serif-display", "weights": [400], "italic": false, "notes": "fat didone poster face" },
-    { "family": "DM Serif Display", "category": "serif-display", "weights": [400], "italic": true, "notes": "high-contrast modern headline" },
-    { "family": "Prata", "category": "serif-display", "weights": [400], "italic": false, "notes": "refined didone; quiet luxury" },
-    { "family": "Marcellus", "category": "serif-display", "weights": [400], "italic": false, "notes": "inscriptional roman; formal, classical" },
-    { "family": "Cinzel", "category": "serif-display", "weights": [400, 700], "italic": false, "notes": "engraved classical caps; awards, monuments" },
-    { "family": "Cinzel Decorative", "category": "serif-display", "weights": [400, 700], "italic": false, "notes": "ornamental version of Cinzel" },
-    { "family": "Cormorant SC", "category": "serif-display", "weights": [400, 700], "italic": false, "notes": "small-caps elegance for subheads" },
+    {
+      "family": "Playfair Display",
+      "category": "serif-display",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "didone editorial headline; fashion-magazine"
+    },
+    {
+      "family": "Abril Fatface",
+      "category": "serif-display",
+      "weights": [400],
+      "italic": false,
+      "notes": "fat didone poster face"
+    },
+    {
+      "family": "DM Serif Display",
+      "category": "serif-display",
+      "weights": [400],
+      "italic": true,
+      "notes": "high-contrast modern headline"
+    },
+    {
+      "family": "Prata",
+      "category": "serif-display",
+      "weights": [400],
+      "italic": false,
+      "notes": "refined didone; quiet luxury"
+    },
+    {
+      "family": "Marcellus",
+      "category": "serif-display",
+      "weights": [400],
+      "italic": false,
+      "notes": "inscriptional roman; formal, classical"
+    },
+    {
+      "family": "Cinzel",
+      "category": "serif-display",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "engraved classical caps; awards, monuments"
+    },
+    {
+      "family": "Cinzel Decorative",
+      "category": "serif-display",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "ornamental version of Cinzel"
+    },
+    {
+      "family": "Cormorant SC",
+      "category": "serif-display",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "small-caps elegance for subheads"
+    },
 
-    { "family": "Arvo", "category": "slab", "weights": [400, 700], "italic": true, "notes": "geometric slab; sturdy and friendly" },
-    { "family": "Zilla Slab", "category": "slab", "weights": [400, 700], "italic": true, "notes": "contemporary slab with soft details" },
-    { "family": "Bitter", "category": "slab", "weights": [400, 700], "italic": true, "notes": "slab built for body text" },
-    { "family": "Roboto Slab", "category": "slab", "weights": [400, 700], "italic": false, "notes": "neutral all-purpose slab" },
-    { "family": "Josefin Slab", "category": "slab", "weights": [400, 700], "italic": true, "notes": "light deco-flavored slab; vintage" },
+    {
+      "family": "Arvo",
+      "category": "slab",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "geometric slab; sturdy and friendly"
+    },
+    {
+      "family": "Zilla Slab",
+      "category": "slab",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "contemporary slab with soft details"
+    },
+    {
+      "family": "Bitter",
+      "category": "slab",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "slab built for body text"
+    },
+    {
+      "family": "Roboto Slab",
+      "category": "slab",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "neutral all-purpose slab"
+    },
+    {
+      "family": "Josefin Slab",
+      "category": "slab",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "light deco-flavored slab; vintage"
+    },
 
-    { "family": "Inter", "category": "sans", "weights": [400, 700], "italic": true, "notes": "neutral modern grotesque; tight spacing" },
-    { "family": "Source Sans 3", "category": "sans", "weights": [400, 700], "italic": true, "notes": "humanist neutral workhorse" },
-    { "family": "Work Sans", "category": "sans", "weights": [400, 700], "italic": true, "notes": "clean grotesque tuned for print sizes" },
-    { "family": "Libre Franklin", "category": "sans", "weights": [400, 700], "italic": true, "notes": "American gothic; newsy" },
+    {
+      "family": "Inter",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "neutral modern grotesque; tight spacing"
+    },
+    {
+      "family": "Source Sans 3",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "humanist neutral workhorse"
+    },
+    {
+      "family": "Work Sans",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "clean grotesque tuned for print sizes"
+    },
+    {
+      "family": "Libre Franklin",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "American gothic; newsy"
+    },
     { "family": "Lato", "category": "sans", "weights": [400, 700], "italic": true, "notes": "warm humanist" },
-    { "family": "Karla", "category": "sans", "weights": [400, 700], "italic": true, "notes": "quirky grotesque with character" },
-    { "family": "Rubik", "category": "sans", "weights": [400, 700], "italic": true, "notes": "rounded corners; friendly" },
-    { "family": "DM Sans", "category": "sans", "weights": [400, 700], "italic": true, "notes": "geometric-leaning, modern brand feel" },
+    {
+      "family": "Karla",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "quirky grotesque with character"
+    },
+    {
+      "family": "Rubik",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "rounded corners; friendly"
+    },
+    {
+      "family": "DM Sans",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "geometric-leaning, modern brand feel"
+    },
     { "family": "Figtree", "category": "sans", "weights": [400, 700], "italic": true, "notes": "friendly geometric" },
     { "family": "PT Sans", "category": "sans", "weights": [400, 700], "italic": true, "notes": "universal workhorse" },
-    { "family": "Cabin", "category": "sans", "weights": [400, 700], "italic": true, "notes": "humanist with Gill flavor" },
-    { "family": "Nunito Sans", "category": "sans", "weights": [400, 700], "italic": true, "notes": "soft and rounded; approachable" },
+    {
+      "family": "Cabin",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "humanist with Gill flavor"
+    },
+    {
+      "family": "Nunito Sans",
+      "category": "sans",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "soft and rounded; approachable"
+    },
 
-    { "family": "Montserrat", "category": "sans-display", "weights": [400, 700], "italic": true, "notes": "geometric; Buenos Aires poster heritage" },
-    { "family": "Poppins", "category": "sans-display", "weights": [400, 700], "italic": true, "notes": "circular geometric" },
-    { "family": "Jost", "category": "sans-display", "weights": [400, 700], "italic": true, "notes": "Futura-flavored geometric" },
-    { "family": "Raleway", "category": "sans-display", "weights": [400, 700], "italic": true, "notes": "elegant display sans; good thin weights exist" },
-    { "family": "Josefin Sans", "category": "sans-display", "weights": [400, 700], "italic": true, "notes": "art-deco geometric; 1920s" },
-    { "family": "Questrial", "category": "sans-display", "weights": [400], "italic": false, "notes": "minimal geometric one-weight" },
-    { "family": "Righteous", "category": "sans-display", "weights": [400], "italic": false, "notes": "deco/retro-tech display" },
-    { "family": "Comfortaa", "category": "sans-display", "weights": [400, 700], "italic": false, "notes": "rounded display; playful" },
+    {
+      "family": "Montserrat",
+      "category": "sans-display",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "geometric; Buenos Aires poster heritage"
+    },
+    {
+      "family": "Poppins",
+      "category": "sans-display",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "circular geometric"
+    },
+    {
+      "family": "Jost",
+      "category": "sans-display",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "Futura-flavored geometric"
+    },
+    {
+      "family": "Raleway",
+      "category": "sans-display",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "elegant display sans; good thin weights exist"
+    },
+    {
+      "family": "Josefin Sans",
+      "category": "sans-display",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "art-deco geometric; 1920s"
+    },
+    {
+      "family": "Questrial",
+      "category": "sans-display",
+      "weights": [400],
+      "italic": false,
+      "notes": "minimal geometric one-weight"
+    },
+    {
+      "family": "Righteous",
+      "category": "sans-display",
+      "weights": [400],
+      "italic": false,
+      "notes": "deco/retro-tech display"
+    },
+    {
+      "family": "Comfortaa",
+      "category": "sans-display",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "rounded display; playful"
+    },
 
-    { "family": "Oswald", "category": "condensed", "weights": [400, 700], "italic": false, "notes": "gothic condensed; posters, dates, venues" },
-    { "family": "Bebas Neue", "category": "condensed", "weights": [400], "italic": false, "notes": "all-caps condensed staple" },
-    { "family": "Anton", "category": "condensed", "weights": [400], "italic": false, "notes": "very heavy condensed impact" },
-    { "family": "Barlow Condensed", "category": "condensed", "weights": [400, 700], "italic": true, "notes": "versatile condensed family" },
-    { "family": "Archivo Narrow", "category": "condensed", "weights": [400, 700], "italic": true, "notes": "narrow grotesque; space-tight body" },
-    { "family": "PT Sans Narrow", "category": "condensed", "weights": [400, 700], "italic": false, "notes": "narrow workhorse" },
+    {
+      "family": "Oswald",
+      "category": "condensed",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "gothic condensed; posters, dates, venues"
+    },
+    {
+      "family": "Bebas Neue",
+      "category": "condensed",
+      "weights": [400],
+      "italic": false,
+      "notes": "all-caps condensed staple"
+    },
+    {
+      "family": "Anton",
+      "category": "condensed",
+      "weights": [400],
+      "italic": false,
+      "notes": "very heavy condensed impact"
+    },
+    {
+      "family": "Barlow Condensed",
+      "category": "condensed",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "versatile condensed family"
+    },
+    {
+      "family": "Archivo Narrow",
+      "category": "condensed",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "narrow grotesque; space-tight body"
+    },
+    {
+      "family": "PT Sans Narrow",
+      "category": "condensed",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "narrow workhorse"
+    },
 
-    { "family": "Archivo Black", "category": "display", "weights": [400], "italic": false, "notes": "heavy grotesque; big-letter titles" },
-    { "family": "Alfa Slab One", "category": "display", "weights": [400], "italic": false, "notes": "fat slab poster letters" },
-    { "family": "Titan One", "category": "display", "weights": [400], "italic": false, "notes": "bubbly heavy display" },
-    { "family": "Bungee", "category": "display", "weights": [400], "italic": false, "notes": "signage; works set vertically" },
+    {
+      "family": "Archivo Black",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "heavy grotesque; big-letter titles"
+    },
+    {
+      "family": "Alfa Slab One",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "fat slab poster letters"
+    },
+    {
+      "family": "Titan One",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "bubbly heavy display"
+    },
+    {
+      "family": "Bungee",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "signage; works set vertically"
+    },
     { "family": "Ultra", "category": "display", "weights": [400], "italic": false, "notes": "fat wedge-serif poster" },
-    { "family": "Passion One", "category": "display", "weights": [400, 700], "italic": false, "notes": "condensed rounded poster" },
-    { "family": "Lilita One", "category": "display", "weights": [400], "italic": false, "notes": "chunky and friendly" },
-    { "family": "Shrikhand", "category": "display", "weights": [400], "italic": false, "notes": "juicy bold retro poster" },
-    { "family": "Monoton", "category": "display", "weights": [400], "italic": false, "notes": "multiline neon-sign retro" },
+    {
+      "family": "Passion One",
+      "category": "display",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "condensed rounded poster"
+    },
+    {
+      "family": "Lilita One",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "chunky and friendly"
+    },
+    {
+      "family": "Shrikhand",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "juicy bold retro poster"
+    },
+    {
+      "family": "Monoton",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "multiline neon-sign retro"
+    },
     { "family": "Limelight", "category": "display", "weights": [400], "italic": false, "notes": "art-deco marquee" },
-    { "family": "Poiret One", "category": "display", "weights": [400], "italic": false, "notes": "thin deco geometric; gatsby" },
+    {
+      "family": "Poiret One",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "thin deco geometric; gatsby"
+    },
     { "family": "Rye", "category": "display", "weights": [400], "italic": false, "notes": "western / circus woodtype" },
-    { "family": "Graduate", "category": "display", "weights": [400], "italic": false, "notes": "varsity block letters" },
-    { "family": "Special Elite", "category": "display", "weights": [400], "italic": false, "notes": "distressed typewriter; noir" },
+    {
+      "family": "Graduate",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "varsity block letters"
+    },
+    {
+      "family": "Special Elite",
+      "category": "display",
+      "weights": [400],
+      "italic": false,
+      "notes": "distressed typewriter; noir"
+    },
 
-    { "family": "Yellowtail", "category": "script", "weights": [400], "italic": false, "notes": "retro brush script; 'Greetings from'" },
+    {
+      "family": "Yellowtail",
+      "category": "script",
+      "weights": [400],
+      "italic": false,
+      "notes": "retro brush script; 'Greetings from'"
+    },
     { "family": "Kaushan Script", "category": "script", "weights": [400], "italic": false, "notes": "energetic brush" },
     { "family": "Pacifico", "category": "script", "weights": [400], "italic": false, "notes": "1950s surf casual" },
-    { "family": "Lobster", "category": "script", "weights": [400], "italic": false, "notes": "bold retro script staple" },
-    { "family": "Dancing Script", "category": "script", "weights": [400, 700], "italic": false, "notes": "lively casual script" },
+    {
+      "family": "Lobster",
+      "category": "script",
+      "weights": [400],
+      "italic": false,
+      "notes": "bold retro script staple"
+    },
+    {
+      "family": "Dancing Script",
+      "category": "script",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "lively casual script"
+    },
     { "family": "Satisfy", "category": "script", "weights": [400], "italic": false, "notes": "relaxed pen script" },
-    { "family": "Courgette", "category": "script", "weights": [400], "italic": false, "notes": "upright friendly script" },
-    { "family": "Sacramento", "category": "script", "weights": [400], "italic": false, "notes": "monoline 1950s hand-lettering" },
+    {
+      "family": "Courgette",
+      "category": "script",
+      "weights": [400],
+      "italic": false,
+      "notes": "upright friendly script"
+    },
+    {
+      "family": "Sacramento",
+      "category": "script",
+      "weights": [400],
+      "italic": false,
+      "notes": "monoline 1950s hand-lettering"
+    },
     { "family": "Damion", "category": "script", "weights": [400], "italic": false, "notes": "confident brush script" },
-    { "family": "Mr Dafoe", "category": "script", "weights": [400], "italic": false, "notes": "retro signage script; diner neon" },
+    {
+      "family": "Mr Dafoe",
+      "category": "script",
+      "weights": [400],
+      "italic": false,
+      "notes": "retro signage script; diner neon"
+    },
 
-    { "family": "Great Vibes", "category": "script-formal", "weights": [400], "italic": false, "notes": "flowing formal calligraphy; weddings" },
-    { "family": "Pinyon Script", "category": "script-formal", "weights": [400], "italic": false, "notes": "ornate copperplate" },
-    { "family": "Tangerine", "category": "script-formal", "weights": [400, 700], "italic": false, "notes": "delicate calligraphic; needs large sizes" },
-    { "family": "Allura", "category": "script-formal", "weights": [400], "italic": false, "notes": "clean formal script" },
-    { "family": "Parisienne", "category": "script-formal", "weights": [400], "italic": false, "notes": "casual-elegant French flavor" },
-    { "family": "Alex Brush", "category": "script-formal", "weights": [400], "italic": false, "notes": "connected brush calligraphy" },
+    {
+      "family": "Great Vibes",
+      "category": "script-formal",
+      "weights": [400],
+      "italic": false,
+      "notes": "flowing formal calligraphy; weddings"
+    },
+    {
+      "family": "Pinyon Script",
+      "category": "script-formal",
+      "weights": [400],
+      "italic": false,
+      "notes": "ornate copperplate"
+    },
+    {
+      "family": "Tangerine",
+      "category": "script-formal",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "delicate calligraphic; needs large sizes"
+    },
+    {
+      "family": "Allura",
+      "category": "script-formal",
+      "weights": [400],
+      "italic": false,
+      "notes": "clean formal script"
+    },
+    {
+      "family": "Parisienne",
+      "category": "script-formal",
+      "weights": [400],
+      "italic": false,
+      "notes": "casual-elegant French flavor"
+    },
+    {
+      "family": "Alex Brush",
+      "category": "script-formal",
+      "weights": [400],
+      "italic": false,
+      "notes": "connected brush calligraphy"
+    },
 
-    { "family": "Caveat", "category": "handwriting", "weights": [400, 700], "italic": false, "notes": "quick marker notes; annotations" },
-    { "family": "Amatic SC", "category": "handwriting", "weights": [400, 700], "italic": false, "notes": "tall skinny hand caps; chalkboard" },
-    { "family": "Shadows Into Light", "category": "handwriting", "weights": [400], "italic": false, "notes": "neat felt-tip hand" },
-    { "family": "Permanent Marker", "category": "handwriting", "weights": [400], "italic": false, "notes": "thick marker" },
+    {
+      "family": "Caveat",
+      "category": "handwriting",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "quick marker notes; annotations"
+    },
+    {
+      "family": "Amatic SC",
+      "category": "handwriting",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "tall skinny hand caps; chalkboard"
+    },
+    {
+      "family": "Shadows Into Light",
+      "category": "handwriting",
+      "weights": [400],
+      "italic": false,
+      "notes": "neat felt-tip hand"
+    },
+    {
+      "family": "Permanent Marker",
+      "category": "handwriting",
+      "weights": [400],
+      "italic": false,
+      "notes": "thick marker"
+    },
     { "family": "Rock Salt", "category": "handwriting", "weights": [400], "italic": false, "notes": "rough hand caps" },
-    { "family": "Patrick Hand", "category": "handwriting", "weights": [400], "italic": false, "notes": "friendly legible handwriting" },
-    { "family": "Homemade Apple", "category": "handwriting", "weights": [400], "italic": false, "notes": "realistic cursive hand" },
+    {
+      "family": "Patrick Hand",
+      "category": "handwriting",
+      "weights": [400],
+      "italic": false,
+      "notes": "friendly legible handwriting"
+    },
+    {
+      "family": "Homemade Apple",
+      "category": "handwriting",
+      "weights": [400],
+      "italic": false,
+      "notes": "realistic cursive hand"
+    },
 
-    { "family": "UnifrakturMaguntia", "category": "blackletter-stencil", "weights": [400], "italic": false, "notes": "true blackletter; certificates, oktoberfest" },
-    { "family": "Pirata One", "category": "blackletter-stencil", "weights": [400], "italic": false, "notes": "readable blackletter display" },
-    { "family": "Stardos Stencil", "category": "blackletter-stencil", "weights": [400, 700], "italic": false, "notes": "classic crate stencil" },
-    { "family": "Allerta Stencil", "category": "blackletter-stencil", "weights": [400], "italic": false, "notes": "clean modern stencil" },
+    {
+      "family": "UnifrakturMaguntia",
+      "category": "blackletter-stencil",
+      "weights": [400],
+      "italic": false,
+      "notes": "true blackletter; certificates, oktoberfest"
+    },
+    {
+      "family": "Pirata One",
+      "category": "blackletter-stencil",
+      "weights": [400],
+      "italic": false,
+      "notes": "readable blackletter display"
+    },
+    {
+      "family": "Stardos Stencil",
+      "category": "blackletter-stencil",
+      "weights": [400, 700],
+      "italic": false,
+      "notes": "classic crate stencil"
+    },
+    {
+      "family": "Allerta Stencil",
+      "category": "blackletter-stencil",
+      "weights": [400],
+      "italic": false,
+      "notes": "clean modern stencil"
+    },
 
-    { "family": "Courier Prime", "category": "typewriter-mono", "weights": [400, 700], "italic": true, "notes": "screenplay typewriter; crisp courier" },
-    { "family": "Cutive Mono", "category": "typewriter-mono", "weights": [400], "italic": false, "notes": "vintage typewriter mono" },
-    { "family": "Space Mono", "category": "typewriter-mono", "weights": [400, 700], "italic": true, "notes": "retro-futurist mono; techy" }
+    {
+      "family": "Courier Prime",
+      "category": "typewriter-mono",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "screenplay typewriter; crisp courier"
+    },
+    {
+      "family": "Cutive Mono",
+      "category": "typewriter-mono",
+      "weights": [400],
+      "italic": false,
+      "notes": "vintage typewriter mono"
+    },
+    {
+      "family": "Space Mono",
+      "category": "typewriter-mono",
+      "weights": [400, 700],
+      "italic": true,
+      "notes": "retro-futurist mono; techy"
+    }
   ]
 }

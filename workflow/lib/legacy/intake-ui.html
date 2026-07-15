@@ -1,689 +1,971 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Intake</title>
-<style>
-  :root {
-    --bg: #f6f5f2;
-    --panel: #ffffff;
-    --ink: #22211f;
-    --muted: #7a766e;
-    --line: #e4e1da;
-    --accent: #b0532a;
-    --accent-ink: #ffffff;
-    --ok: #3e7a4e;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font: 15px/1.5 -apple-system, "Helvetica Neue", Segoe UI, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-  }
-  header {
-    display: flex; align-items: baseline; gap: 14px;
-    padding: 16px 24px 0;
-  }
-  header h1 { font-size: 20px; margin: 0; font-weight: 650; }
-  header .fmt { color: var(--muted); font-size: 13px; }
-  header .save { margin-left: auto; font-size: 12px; color: var(--muted); }
-  nav {
-    display: flex; gap: 4px; padding: 12px 24px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  nav button {
-    appearance: none; border: 1px solid var(--line); border-bottom: none;
-    background: #edebe6; color: var(--ink);
-    padding: 8px 18px; font-size: 14px; cursor: pointer;
-    border-radius: 8px 8px 0 0;
-  }
-  nav button.active { background: var(--panel); font-weight: 600; position: relative; top: 1px; }
-  main { padding: 20px 24px 120px; max-width: 1100px; margin: 0 auto; }
-  .tab { display: none; }
-  .tab.active { display: block; }
-  h2 { font-size: 15px; font-weight: 650; margin: 18px 0 8px; }
-  .hint { color: var(--muted); font-size: 13px; margin: 4px 0 14px; }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Intake</title>
+    <style>
+      :root {
+        --bg: #f6f5f2;
+        --panel: #ffffff;
+        --ink: #22211f;
+        --muted: #7a766e;
+        --line: #e4e1da;
+        --accent: #b0532a;
+        --accent-ink: #ffffff;
+        --ok: #3e7a4e;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          15px/1.5 -apple-system,
+          "Helvetica Neue",
+          Segoe UI,
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        padding: 16px 24px 0;
+      }
+      header h1 {
+        font-size: 20px;
+        margin: 0;
+        font-weight: 650;
+      }
+      header .fmt {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      header .save {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      nav {
+        display: flex;
+        gap: 4px;
+        padding: 12px 24px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      nav button {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-bottom: none;
+        background: #edebe6;
+        color: var(--ink);
+        padding: 8px 18px;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+      }
+      nav button.active {
+        background: var(--panel);
+        font-weight: 600;
+        position: relative;
+        top: 1px;
+      }
+      main {
+        padding: 20px 24px 120px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .tab {
+        display: none;
+      }
+      .tab.active {
+        display: block;
+      }
+      h2 {
+        font-size: 15px;
+        font-weight: 650;
+        margin: 18px 0 8px;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 4px 0 14px;
+      }
 
-  /* Files tab */
-  #dropzone {
-    border: 2px dashed var(--line); border-radius: 12px;
-    padding: 26px; text-align: center; color: var(--muted);
-    background: var(--panel); cursor: pointer; transition: border-color .15s;
-  }
-  #dropzone.drag { border-color: var(--accent); color: var(--accent); }
-  .filewrap { display: flex; gap: 20px; margin-top: 18px; align-items: flex-start; }
-  #filegrid {
-    flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px; min-width: 0;
-  }
-  .card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 8px; cursor: pointer; text-align: center;
-  }
-  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(176,83,42,.25); }
-  .card .thumb {
-    height: 90px; display: flex; align-items: center; justify-content: center;
-    background: #fafaf8; border-radius: 6px; overflow: hidden; font-size: 34px;
-  }
-  .card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
-  .card .name {
-    font-size: 12px; margin-top: 6px; word-break: break-all;
-    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  }
-  .card .badge { font-size: 10px; color: var(--muted); }
-  .card .hasnote { color: var(--accent); }
-  #filepanel {
-    width: 320px; flex-shrink: 0; background: var(--panel);
-    border: 1px solid var(--line); border-radius: 10px; padding: 14px;
-    position: sticky; top: 16px;
-  }
-  #filepanel.hidden { display: none; }
-  #filepanel .meta { font-size: 12px; color: var(--muted); margin: 6px 0 10px; }
-  textarea, input[type=text], input[type=number], select {
-    width: 100%; font: inherit; padding: 8px 10px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
-  }
-  textarea { resize: vertical; min-height: 90px; }
-  button.btn {
-    appearance: none; border: 1px solid var(--line); border-radius: 8px;
-    background: #edebe6; color: var(--ink); padding: 8px 16px;
-    font: inherit; font-size: 14px; cursor: pointer;
-  }
-  button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-  button.btn.danger { color: #a33; }
-  button.btn:disabled { opacity: .5; cursor: default; }
+      /* Files tab */
+      #dropzone {
+        border: 2px dashed var(--line);
+        border-radius: 12px;
+        padding: 26px;
+        text-align: center;
+        color: var(--muted);
+        background: var(--panel);
+        cursor: pointer;
+        transition: border-color 0.15s;
+      }
+      #dropzone.drag {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .filewrap {
+        display: flex;
+        gap: 20px;
+        margin-top: 18px;
+        align-items: flex-start;
+      }
+      #filegrid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 12px;
+        min-width: 0;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px;
+        cursor: pointer;
+        text-align: center;
+      }
+      .card.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(176, 83, 42, 0.25);
+      }
+      .card .thumb {
+        height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fafaf8;
+        border-radius: 6px;
+        overflow: hidden;
+        font-size: 34px;
+      }
+      .card .thumb img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .card .name {
+        font-size: 12px;
+        margin-top: 6px;
+        word-break: break-all;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      .card .badge {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .card .hasnote {
+        color: var(--accent);
+      }
+      #filepanel {
+        width: 320px;
+        flex-shrink: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+        position: sticky;
+        top: 16px;
+      }
+      #filepanel.hidden {
+        display: none;
+      }
+      #filepanel .meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 6px 0 10px;
+      }
+      textarea,
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        font: inherit;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--ink);
+      }
+      textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
+      button.btn {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #edebe6;
+        color: var(--ink);
+        padding: 8px 16px;
+        font: inherit;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button.btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      button.btn.danger {
+        color: #a33;
+      }
+      button.btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
 
-  /* Notes tab */
-  .note-card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start;
-  }
-  .note-card textarea { border: none; padding: 0; min-height: 24px; background: transparent; }
-  .note-card textarea:focus { outline: none; }
-  .note-card button { flex-shrink: 0; }
+      /* Notes tab */
+      .note-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .note-card textarea {
+        border: none;
+        padding: 0;
+        min-height: 24px;
+        background: transparent;
+      }
+      .note-card textarea:focus {
+        outline: none;
+      }
+      .note-card button {
+        flex-shrink: 0;
+      }
 
-  /* Sketch tab */
-  #sketchbar { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-  #sketchbar label { font-size: 13px; color: var(--muted); }
-  .swatch {
-    width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
-    display: inline-block; vertical-align: middle;
-  }
-  .swatch.active { border-color: var(--ink); }
-  #canvaswrap {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 18px; display: flex; justify-content: center;
-  }
-  #sketch { background: #fff; border: 1px solid var(--line); touch-action: none; cursor: crosshair; }
+      /* Sketch tab */
+      #sketchbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      #sketchbar label {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .swatch {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      .swatch.active {
+        border-color: var(--ink);
+      }
+      #canvaswrap {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 18px;
+        display: flex;
+        justify-content: center;
+      }
+      #sketch {
+        background: #fff;
+        border: 1px solid var(--line);
+        touch-action: none;
+        cursor: crosshair;
+      }
 
-  /* Format tab */
-  .format-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; max-width: 760px; }
-  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-  .format-preview {
-    margin-top: 20px; background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 18px; display: inline-flex; align-items: center; gap: 18px;
-  }
-  #fmtbox { background: #fff; border: 1.5px solid var(--ink); position: relative; }
-  #fmtsafe { position: absolute; border: 1px dashed #58a; }
-  .format-preview .cap { font-size: 12px; color: var(--muted); max-width: 220px; }
+      /* Format tab */
+      .format-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+        max-width: 760px;
+      }
+      .field label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .format-preview {
+        margin-top: 20px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+      }
+      #fmtbox {
+        background: #fff;
+        border: 1.5px solid var(--ink);
+        position: relative;
+      }
+      #fmtsafe {
+        position: absolute;
+        border: 1px dashed #58a;
+      }
+      .format-preview .cap {
+        font-size: 12px;
+        color: var(--muted);
+        max-width: 220px;
+      }
 
-  footer {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--panel); border-top: 1px solid var(--line);
-    padding: 12px 24px; display: flex; align-items: center; gap: 14px;
-  }
-  footer .status { color: var(--muted); font-size: 13px; flex: 1; }
-  #done-overlay {
-    position: fixed; inset: 0; background: rgba(246,245,242,.96);
-    display: none; align-items: center; justify-content: center; text-align: center;
-  }
-  #done-overlay .box { max-width: 460px; }
-  #done-overlay h2 { font-size: 22px; }
-</style>
-</head>
-<body>
-<header>
-  <h1 id="title">Intake</h1>
-  <span class="fmt" id="fmtline"></span>
-  <span class="save" id="savestatus"></span>
-</header>
-<nav>
-  <button data-tab="files" class="active">Files</button>
-  <button data-tab="notes">Notes</button>
-  <button data-tab="inspo">Inspiration</button>
-  <button data-tab="sketch">Sketch</button>
-  <button data-tab="format">Format</button>
-</nav>
-<main>
-
-  <section class="tab active" id="tab-files">
-    <div id="dropzone">Drop files here, or click to choose.<br>
-      <span style="font-size:12px">Logos, photos, fonts, reference PDFs, copy documents - anything the design should use or match.</span>
-    </div>
-    <input type="file" id="fileinput" multiple style="display:none">
-    <div class="filewrap">
-      <div id="filegrid"></div>
-      <aside id="filepanel" class="hidden">
-        <strong id="fp-name" style="word-break:break-all"></strong>
-        <div class="meta" id="fp-meta"></div>
-        <label style="font-size:13px;color:var(--muted)">Notes about this item</label>
-        <textarea id="fp-note" placeholder="What is this? How should it be used?"></textarea>
-        <label style="display:flex;align-items:center;gap:7px;font-size:13px;margin-top:10px;cursor:pointer">
-          <input type="checkbox" id="fp-inspo"> This file is inspiration / reference (style cue, not content to place)
-        </label>
-        <div style="display:flex; gap:8px; margin-top:10px">
-          <button class="btn danger" id="fp-delete">Remove file</button>
+      footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--panel);
+        border-top: 1px solid var(--line);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      footer .status {
+        color: var(--muted);
+        font-size: 13px;
+        flex: 1;
+      }
+      #done-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(246, 245, 242, 0.96);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      #done-overlay .box {
+        max-width: 460px;
+      }
+      #done-overlay h2 {
+        font-size: 22px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 id="title">Intake</h1>
+      <span class="fmt" id="fmtline"></span>
+      <span class="save" id="savestatus"></span>
+    </header>
+    <nav>
+      <button data-tab="files" class="active">Files</button>
+      <button data-tab="notes">Notes</button>
+      <button data-tab="inspo">Inspiration</button>
+      <button data-tab="sketch">Sketch</button>
+      <button data-tab="format">Format</button>
+    </nav>
+    <main>
+      <section class="tab active" id="tab-files">
+        <div id="dropzone">
+          Drop files here, or click to choose.<br />
+          <span style="font-size: 12px"
+            >Logos, photos, fonts, reference PDFs, copy documents - anything the design should use or match.</span
+          >
         </div>
-      </aside>
+        <input type="file" id="fileinput" multiple style="display: none" />
+        <div class="filewrap">
+          <div id="filegrid"></div>
+          <aside id="filepanel" class="hidden">
+            <strong id="fp-name" style="word-break: break-all"></strong>
+            <div class="meta" id="fp-meta"></div>
+            <label style="font-size: 13px; color: var(--muted)">Notes about this item</label>
+            <textarea id="fp-note" placeholder="What is this? How should it be used?"></textarea>
+            <label
+              style="display: flex; align-items: center; gap: 7px; font-size: 13px; margin-top: 10px; cursor: pointer"
+            >
+              <input type="checkbox" id="fp-inspo" /> This file is inspiration / reference (style cue, not content to
+              place)
+            </label>
+            <div style="display: flex; gap: 8px; margin-top: 10px">
+              <button class="btn danger" id="fp-delete">Remove file</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="tab" id="tab-notes">
+        <p class="hint">
+          Global notes about the piece: purpose, audience, tone, required copy, must-include facts, style direction,
+          constraints. Each note becomes a bullet in the agent-facing notes file.
+        </p>
+        <div id="notelist"></div>
+        <button class="btn" id="addnote">+ Note</button>
+      </section>
+
+      <section class="tab" id="tab-inspo">
+        <p class="hint">
+          What should this look like? Name styles, eras, designers, or media you like ("WPA national park posters",
+          "letterpress, not glossy"), paste links to pieces you love, and note anything to avoid. The designer
+          researches toward these instead of guessing. You can also mark an uploaded file as inspiration on the Files
+          tab.
+        </p>
+        <div id="inspolist"></div>
+        <button class="btn" id="addinspo">+ Inspiration</button>
+      </section>
+
+      <section class="tab" id="tab-sketch">
+        <p class="hint">
+          Optional rough blocking sketch. Draw loose boxes and labels for where things go. This is guidance for the
+          first draft, not exact geometry - rough is perfect.
+        </p>
+        <div id="sketchbar">
+          <label>Pen</label>
+          <span class="swatch active" data-color="#222222" style="background: #222"></span>
+          <span class="swatch" data-color="#c0392b" style="background: #c0392b"></span>
+          <span class="swatch" data-color="#2664c7" style="background: #2664c7"></span>
+          <label>Size</label>
+          <input type="range" id="pensize" min="2" max="14" value="4" style="width: 110px" />
+          <button class="btn" id="undo">Undo</button>
+          <button class="btn danger" id="clearsketch">Clear</button>
+        </div>
+        <div id="canvaswrap"><canvas id="sketch"></canvas></div>
+      </section>
+
+      <section class="tab" id="tab-format">
+        <div class="format-grid">
+          <div class="field">
+            <label>Preset</label>
+            <select id="f-preset">
+              <option value="">Custom...</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Kind</label>
+            <input type="text" id="f-kind" placeholder="postcard" />
+          </div>
+          <div class="field">
+            <label>Width</label>
+            <input type="text" id="f-width" placeholder="5in" />
+          </div>
+          <div class="field">
+            <label>Height</label>
+            <input type="text" id="f-height" placeholder="7in" />
+          </div>
+          <div class="field">
+            <label>Orientation</label>
+            <select id="f-orient">
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Bleed</label>
+            <input type="text" id="f-bleed" placeholder="0.125in" />
+          </div>
+          <div class="field">
+            <label>Safe zone</label>
+            <input type="text" id="f-safe" placeholder="0.25in" />
+          </div>
+          <div class="field">
+            <label>Print intent</label>
+            <select id="f-intent">
+              <option value="screen-or-email">Screen or email</option>
+              <option value="home-or-office-printer">Home or office printer</option>
+              <option value="commercial-print-shop">Commercial print shop</option>
+            </select>
+          </div>
+        </div>
+        <div class="format-preview">
+          <div id="fmtbox"><div id="fmtsafe"></div></div>
+          <div class="cap" id="fmtcap"></div>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <span class="status" id="footstatus"></span>
+      <button class="btn primary" id="finish">Finish intake</button>
+    </footer>
+    <div id="done-overlay">
+      <div class="box">
+        <h2>Intake saved</h2>
+        <p>
+          The packet was written to the project folder and this server has stopped.<br />
+          You can close this tab and go back to your agent.
+        </p>
+      </div>
     </div>
-  </section>
 
-  <section class="tab" id="tab-notes">
-    <p class="hint">Global notes about the piece: purpose, audience, tone, required copy, must-include facts, style direction, constraints. Each note becomes a bullet in the agent-facing notes file.</p>
-    <div id="notelist"></div>
-    <button class="btn" id="addnote">+ Note</button>
-  </section>
+    <script>
+      "use strict";
+      const $ = (sel) => document.querySelector(sel);
+      let project = null;
+      let state = null;
+      let files = [];
+      let formats = {};
+      let selectedFile = null;
 
-  <section class="tab" id="tab-inspo">
-    <p class="hint">What should this look like? Name styles, eras, designers, or media you like ("WPA national park posters", "letterpress, not glossy"), paste links to pieces you love, and note anything to avoid.
-    The designer researches toward these instead of guessing.
-    You can also mark an uploaded file as inspiration on the Files tab.</p>
-    <div id="inspolist"></div>
-    <button class="btn" id="addinspo">+ Inspiration</button>
-  </section>
+      // ------------------------------------------------------------ helpers
 
-  <section class="tab" id="tab-sketch">
-    <p class="hint">Optional rough blocking sketch. Draw loose boxes and labels for where things go. This is guidance for the first draft, not exact geometry - rough is perfect.</p>
-    <div id="sketchbar">
-      <label>Pen</label>
-      <span class="swatch active" data-color="#222222" style="background:#222"></span>
-      <span class="swatch" data-color="#c0392b" style="background:#c0392b"></span>
-      <span class="swatch" data-color="#2664c7" style="background:#2664c7"></span>
-      <label>Size</label>
-      <input type="range" id="pensize" min="2" max="14" value="4" style="width:110px">
-      <button class="btn" id="undo">Undo</button>
-      <button class="btn danger" id="clearsketch">Clear</button>
-    </div>
-    <div id="canvaswrap"><canvas id="sketch"></canvas></div>
-  </section>
+      async function api(pathname, body) {
+        const res = await fetch(
+          pathname,
+          body === undefined
+            ? undefined
+            : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+        );
+        if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+        return res.json();
+      }
 
-  <section class="tab" id="tab-format">
-    <div class="format-grid">
-      <div class="field">
-        <label>Preset</label>
-        <select id="f-preset"><option value="">Custom...</option></select>
-      </div>
-      <div class="field">
-        <label>Kind</label>
-        <input type="text" id="f-kind" placeholder="postcard">
-      </div>
-      <div class="field">
-        <label>Width</label>
-        <input type="text" id="f-width" placeholder="5in">
-      </div>
-      <div class="field">
-        <label>Height</label>
-        <input type="text" id="f-height" placeholder="7in">
-      </div>
-      <div class="field">
-        <label>Orientation</label>
-        <select id="f-orient">
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Bleed</label>
-        <input type="text" id="f-bleed" placeholder="0.125in">
-      </div>
-      <div class="field">
-        <label>Safe zone</label>
-        <input type="text" id="f-safe" placeholder="0.25in">
-      </div>
-      <div class="field">
-        <label>Print intent</label>
-        <select id="f-intent">
-          <option value="screen-or-email">Screen or email</option>
-          <option value="home-or-office-printer">Home or office printer</option>
-          <option value="commercial-print-shop">Commercial print shop</option>
-        </select>
-      </div>
-    </div>
-    <div class="format-preview">
-      <div id="fmtbox"><div id="fmtsafe"></div></div>
-      <div class="cap" id="fmtcap"></div>
-    </div>
-  </section>
+      let saveTimer = null;
+      function scheduleSave() {
+        $("#savestatus").textContent = "saving...";
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(async () => {
+          await api("/api/state", {
+            notes: state.notes,
+            inspo: state.inspo,
+            items: state.items,
+            format: state.format,
+            printIntent: state.printIntent,
+            sketchStrokes: strokes,
+          });
+          $("#savestatus").textContent = "saved";
+        }, 500);
+      }
 
-</main>
-<footer>
-  <span class="status" id="footstatus"></span>
-  <button class="btn primary" id="finish">Finish intake</button>
-</footer>
-<div id="done-overlay">
-  <div class="box">
-    <h2>Intake saved</h2>
-    <p>The packet was written to the project folder and this server has stopped.<br>
-    You can close this tab and go back to your agent.</p>
-  </div>
-</div>
+      function fmtBytes(n) {
+        if (n > 1e6) return (n / 1e6).toFixed(1) + " MB";
+        if (n > 1e3) return (n / 1e3).toFixed(0) + " KB";
+        return n + " B";
+      }
 
-<script>
-"use strict";
-const $ = (sel) => document.querySelector(sel);
-let project = null;
-let state = null;
-let files = [];
-let formats = {};
-let selectedFile = null;
+      function inches(v) {
+        const m = String(v || "")
+          .trim()
+          .match(/^([\d.]+)\s*(in|mm|cm|pt)?$/);
+        if (!m) return null;
+        const n = parseFloat(m[1]);
+        const unit = m[2] || "in";
+        return unit === "in" ? n : unit === "mm" ? n / 25.4 : unit === "cm" ? n / 2.54 : n / 72;
+      }
 
-// ------------------------------------------------------------ helpers
+      // --------------------------------------------------------------- tabs
 
-async function api(pathname, body) {
-  const res = await fetch(pathname, body === undefined
-    ? undefined
-    : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error((await res.json()).error || res.statusText);
-  return res.json();
-}
+      document.querySelectorAll("nav button").forEach((b) => {
+        b.addEventListener("click", () => {
+          document.querySelectorAll("nav button").forEach((x) => x.classList.remove("active"));
+          document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          $("#tab-" + b.dataset.tab).classList.add("active");
+          if (b.dataset.tab === "sketch") sizeCanvas();
+        });
+      });
 
-let saveTimer = null;
-function scheduleSave() {
-  $("#savestatus").textContent = "saving...";
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    await api("/api/state", {
-      notes: state.notes,
-      inspo: state.inspo,
-      items: state.items,
-      format: state.format,
-      printIntent: state.printIntent,
-      sketchStrokes: strokes,
-    });
-    $("#savestatus").textContent = "saved";
-  }, 500);
-}
+      // -------------------------------------------------------------- files
 
-function fmtBytes(n) {
-  if (n > 1e6) return (n / 1e6).toFixed(1) + " MB";
-  if (n > 1e3) return (n / 1e3).toFixed(0) + " KB";
-  return n + " B";
-}
+      const ICONS = { pdf: "\u{1F4C4}", font: "\u{1F520}", document: "\u{1F4DD}", other: "\u{1F4E6}" };
 
-function inches(v) {
-  const m = String(v || "").trim().match(/^([\d.]+)\s*(in|mm|cm|pt)?$/);
-  if (!m) return null;
-  const n = parseFloat(m[1]);
-  const unit = m[2] || "in";
-  return unit === "in" ? n : unit === "mm" ? n / 25.4 : unit === "cm" ? n / 2.54 : n / 72;
-}
-
-// --------------------------------------------------------------- tabs
-
-document.querySelectorAll("nav button").forEach((b) => {
-  b.addEventListener("click", () => {
-    document.querySelectorAll("nav button").forEach((x) => x.classList.remove("active"));
-    document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
-    b.classList.add("active");
-    $("#tab-" + b.dataset.tab).classList.add("active");
-    if (b.dataset.tab === "sketch") sizeCanvas();
-  });
-});
-
-// -------------------------------------------------------------- files
-
-const ICONS = { pdf: "\u{1F4C4}", font: "\u{1F520}", document: "\u{1F4DD}", other: "\u{1F4E6}" };
-
-function renderFiles() {
-  const grid = $("#filegrid");
-  grid.innerHTML = "";
-  if (files.length === 0) {
-    grid.innerHTML = '<p class="hint">No files yet.</p>';
-  }
-  for (const f of files) {
-    const card = document.createElement("div");
-    card.className = "card" + (selectedFile === f.name ? " selected" : "");
-    const thumb = f.category === "image"
-      ? `<img src="/files/${encodeURIComponent(f.name)}" alt="">`
-      : `<span>${ICONS[f.category] || ICONS.other}</span>`;
-    const item = state.items[f.name] || {};
-    const note = item.note || "";
-    card.innerHTML = `<div class="thumb">${thumb}</div>
+      function renderFiles() {
+        const grid = $("#filegrid");
+        grid.innerHTML = "";
+        if (files.length === 0) {
+          grid.innerHTML = '<p class="hint">No files yet.</p>';
+        }
+        for (const f of files) {
+          const card = document.createElement("div");
+          card.className = "card" + (selectedFile === f.name ? " selected" : "");
+          const thumb =
+            f.category === "image"
+              ? `<img src="/files/${encodeURIComponent(f.name)}" alt="">`
+              : `<span>${ICONS[f.category] || ICONS.other}</span>`;
+          const item = state.items[f.name] || {};
+          const note = item.note || "";
+          card.innerHTML = `<div class="thumb">${thumb}</div>
       <div class="name">${f.name}</div>
       <div class="badge">${f.category} · ${fmtBytes(f.bytes)}${note ? ' · <span class="hasnote">note</span>' : ""}${item.inspo ? ' · <span class="hasnote">inspo</span>' : ""}</div>`;
-    card.addEventListener("click", () => selectFile(f.name));
-    grid.appendChild(card);
-  }
-  $("#footstatus").textContent =
-    `${files.length} file(s) · ${state.notes.length} note(s)` +
-    (state.inspo.length ? ` · ${state.inspo.length} inspiration` : "") +
-    (strokes.length ? " · sketch drawn" : "");
-}
+          card.addEventListener("click", () => selectFile(f.name));
+          grid.appendChild(card);
+        }
+        $("#footstatus").textContent =
+          `${files.length} file(s) · ${state.notes.length} note(s)` +
+          (state.inspo.length ? ` · ${state.inspo.length} inspiration` : "") +
+          (strokes.length ? " · sketch drawn" : "");
+      }
 
-function selectFile(name) {
-  selectedFile = name;
-  const f = files.find((x) => x.name === name);
-  if (!f) { $("#filepanel").classList.add("hidden"); renderFiles(); return; }
-  $("#filepanel").classList.remove("hidden");
-  $("#fp-name").textContent = f.name;
-  $("#fp-meta").textContent = `${f.category} · ${fmtBytes(f.bytes)}` + (f.width ? ` · ${f.width}×${f.height}px` : "");
-  $("#fp-note").value = (state.items[name] && state.items[name].note) || "";
-  $("#fp-inspo").checked = !!(state.items[name] && state.items[name].inspo);
-  renderFiles();
-}
+      function selectFile(name) {
+        selectedFile = name;
+        const f = files.find((x) => x.name === name);
+        if (!f) {
+          $("#filepanel").classList.add("hidden");
+          renderFiles();
+          return;
+        }
+        $("#filepanel").classList.remove("hidden");
+        $("#fp-name").textContent = f.name;
+        $("#fp-meta").textContent =
+          `${f.category} · ${fmtBytes(f.bytes)}` + (f.width ? ` · ${f.width}×${f.height}px` : "");
+        $("#fp-note").value = (state.items[name] && state.items[name].note) || "";
+        $("#fp-inspo").checked = !!(state.items[name] && state.items[name].inspo);
+        renderFiles();
+      }
 
-$("#fp-note").addEventListener("input", () => {
-  if (!selectedFile) return;
-  state.items[selectedFile] = { ...state.items[selectedFile], note: $("#fp-note").value };
-  scheduleSave();
-  renderFiles();
-});
+      $("#fp-note").addEventListener("input", () => {
+        if (!selectedFile) return;
+        state.items[selectedFile] = { ...state.items[selectedFile], note: $("#fp-note").value };
+        scheduleSave();
+        renderFiles();
+      });
 
-$("#fp-inspo").addEventListener("change", () => {
-  if (!selectedFile) return;
-  state.items[selectedFile] = { ...state.items[selectedFile], inspo: $("#fp-inspo").checked };
-  scheduleSave();
-  renderFiles();
-});
+      $("#fp-inspo").addEventListener("change", () => {
+        if (!selectedFile) return;
+        state.items[selectedFile] = { ...state.items[selectedFile], inspo: $("#fp-inspo").checked };
+        scheduleSave();
+        renderFiles();
+      });
 
-$("#fp-delete").addEventListener("click", async () => {
-  if (!selectedFile) return;
-  await api("/api/delete-file", { name: selectedFile });
-  await refreshFiles();
-  selectedFile = null;
-  $("#filepanel").classList.add("hidden");
-  renderFiles();
-});
+      $("#fp-delete").addEventListener("click", async () => {
+        if (!selectedFile) return;
+        await api("/api/delete-file", { name: selectedFile });
+        await refreshFiles();
+        selectedFile = null;
+        $("#filepanel").classList.add("hidden");
+        renderFiles();
+      });
 
-async function refreshFiles() {
-  const data = await api("/api/project");
-  files = data.files;
-  renderFiles();
-}
+      async function refreshFiles() {
+        const data = await api("/api/project");
+        files = data.files;
+        renderFiles();
+      }
 
-async function uploadFiles(fileList) {
-  for (const file of fileList) {
-    $("#savestatus").textContent = `uploading ${file.name}...`;
-    const dataBase64 = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result.split(",")[1]);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-    await api("/api/upload", { name: file.name, dataBase64 });
-  }
-  $("#savestatus").textContent = "saved";
-  await refreshFiles();
-}
+      async function uploadFiles(fileList) {
+        for (const file of fileList) {
+          $("#savestatus").textContent = `uploading ${file.name}...`;
+          const dataBase64 = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result.split(",")[1]);
+            r.onerror = reject;
+            r.readAsDataURL(file);
+          });
+          await api("/api/upload", { name: file.name, dataBase64 });
+        }
+        $("#savestatus").textContent = "saved";
+        await refreshFiles();
+      }
 
-const dz = $("#dropzone");
-dz.addEventListener("click", () => $("#fileinput").click());
-$("#fileinput").addEventListener("change", (e) => uploadFiles(e.target.files));
-dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
-dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
-dz.addEventListener("drop", (e) => {
-  e.preventDefault();
-  dz.classList.remove("drag");
-  uploadFiles(e.dataTransfer.files);
-});
+      const dz = $("#dropzone");
+      dz.addEventListener("click", () => $("#fileinput").click());
+      $("#fileinput").addEventListener("change", (e) => uploadFiles(e.target.files));
+      dz.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dz.classList.add("drag");
+      });
+      dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+      dz.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dz.classList.remove("drag");
+        uploadFiles(e.dataTransfer.files);
+      });
 
-// -------------------------------------------------------------- notes
+      // -------------------------------------------------------------- notes
 
-function renderCardList(listSel, key, placeholder) {
-  const list = $(listSel);
-  list.innerHTML = "";
-  for (const entry of state[key]) {
-    const card = document.createElement("div");
-    card.className = "note-card";
-    const ta = document.createElement("textarea");
-    ta.value = entry.text;
-    ta.placeholder = placeholder;
-    ta.addEventListener("input", () => { entry.text = ta.value; scheduleSave(); });
-    const del = document.createElement("button");
-    del.className = "btn danger";
-    del.textContent = "×";
-    del.addEventListener("click", () => {
-      state[key] = state[key].filter((n) => n !== entry);
-      renderCardList(listSel, key, placeholder);
-      scheduleSave();
-    });
-    card.append(ta, del);
-    list.appendChild(card);
-  }
-}
+      function renderCardList(listSel, key, placeholder) {
+        const list = $(listSel);
+        list.innerHTML = "";
+        for (const entry of state[key]) {
+          const card = document.createElement("div");
+          card.className = "note-card";
+          const ta = document.createElement("textarea");
+          ta.value = entry.text;
+          ta.placeholder = placeholder;
+          ta.addEventListener("input", () => {
+            entry.text = ta.value;
+            scheduleSave();
+          });
+          const del = document.createElement("button");
+          del.className = "btn danger";
+          del.textContent = "×";
+          del.addEventListener("click", () => {
+            state[key] = state[key].filter((n) => n !== entry);
+            renderCardList(listSel, key, placeholder);
+            scheduleSave();
+          });
+          card.append(ta, del);
+          list.appendChild(card);
+        }
+      }
 
-const renderNotes = () => renderCardList("#notelist", "notes", "Write a note...");
-const renderInspo = () => renderCardList("#inspolist", "inspo", "A style, era, designer, link, or thing to avoid...");
+      const renderNotes = () => renderCardList("#notelist", "notes", "Write a note...");
+      const renderInspo = () =>
+        renderCardList("#inspolist", "inspo", "A style, era, designer, link, or thing to avoid...");
 
-function addCard(key, render, listSel) {
-  state[key].push({ id: Date.now().toString(36), text: "", createdAt: new Date().toISOString() });
-  render();
-  const areas = document.querySelectorAll(listSel + " textarea");
-  areas[areas.length - 1].focus();
-}
+      function addCard(key, render, listSel) {
+        state[key].push({ id: Date.now().toString(36), text: "", createdAt: new Date().toISOString() });
+        render();
+        const areas = document.querySelectorAll(listSel + " textarea");
+        areas[areas.length - 1].focus();
+      }
 
-$("#addnote").addEventListener("click", () => addCard("notes", renderNotes, "#notelist"));
-$("#addinspo").addEventListener("click", () => addCard("inspo", renderInspo, "#inspolist"));
+      $("#addnote").addEventListener("click", () => addCard("notes", renderNotes, "#notelist"));
+      $("#addinspo").addEventListener("click", () => addCard("inspo", renderInspo, "#inspolist"));
 
-// ------------------------------------------------------------- sketch
+      // ------------------------------------------------------------- sketch
 
-const canvas = $("#sketch");
-const ctx = canvas.getContext("2d");
-let strokes = [];
-let currentStroke = null;
-let penColor = "#222222";
+      const canvas = $("#sketch");
+      const ctx = canvas.getContext("2d");
+      let strokes = [];
+      let currentStroke = null;
+      let penColor = "#222222";
 
-function sheetAspect() {
-  const w = inches(state.format.width) || 5;
-  const h = inches(state.format.height) || 7;
-  return w / h;
-}
+      function sheetAspect() {
+        const w = inches(state.format.width) || 5;
+        const h = inches(state.format.height) || 7;
+        return w / h;
+      }
 
-function sizeCanvas() {
-  const wrap = $("#canvaswrap");
-  const maxW = Math.min(wrap.clientWidth - 40, 760);
-  const maxH = window.innerHeight - 320;
-  const aspect = sheetAspect();
-  let w = maxW, h = w / aspect;
-  if (h > maxH) { h = maxH; w = h * aspect; }
-  canvas.width = Math.round(w * devicePixelRatio);
-  canvas.height = Math.round(h * devicePixelRatio);
-  canvas.style.width = Math.round(w) + "px";
-  canvas.style.height = Math.round(h) + "px";
-  redraw();
-}
+      function sizeCanvas() {
+        const wrap = $("#canvaswrap");
+        const maxW = Math.min(wrap.clientWidth - 40, 760);
+        const maxH = window.innerHeight - 320;
+        const aspect = sheetAspect();
+        let w = maxW,
+          h = w / aspect;
+        if (h > maxH) {
+          h = maxH;
+          w = h * aspect;
+        }
+        canvas.width = Math.round(w * devicePixelRatio);
+        canvas.height = Math.round(h * devicePixelRatio);
+        canvas.style.width = Math.round(w) + "px";
+        canvas.style.height = Math.round(h) + "px";
+        redraw();
+      }
 
-function redraw(target = ctx, scaleW = canvas.width, scaleH = canvas.height) {
-  target.clearRect(0, 0, scaleW, scaleH);
-  target.fillStyle = "#fff";
-  target.fillRect(0, 0, scaleW, scaleH);
-  target.lineCap = "round";
-  target.lineJoin = "round";
-  for (const s of strokes.concat(currentStroke ? [currentStroke] : [])) {
-    target.strokeStyle = s.color;
-    target.lineWidth = s.size * (scaleW / 760);
-    target.beginPath();
-    s.points.forEach(([x, y], i) => {
-      const px = x * scaleW, py = y * scaleH;
-      i === 0 ? target.moveTo(px, py) : target.lineTo(px, py);
-    });
-    target.stroke();
-  }
-}
+      function redraw(target = ctx, scaleW = canvas.width, scaleH = canvas.height) {
+        target.clearRect(0, 0, scaleW, scaleH);
+        target.fillStyle = "#fff";
+        target.fillRect(0, 0, scaleW, scaleH);
+        target.lineCap = "round";
+        target.lineJoin = "round";
+        for (const s of strokes.concat(currentStroke ? [currentStroke] : [])) {
+          target.strokeStyle = s.color;
+          target.lineWidth = s.size * (scaleW / 760);
+          target.beginPath();
+          s.points.forEach(([x, y], i) => {
+            const px = x * scaleW,
+              py = y * scaleH;
+            i === 0 ? target.moveTo(px, py) : target.lineTo(px, py);
+          });
+          target.stroke();
+        }
+      }
 
-function canvasPoint(e) {
-  const r = canvas.getBoundingClientRect();
-  return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
-}
+      function canvasPoint(e) {
+        const r = canvas.getBoundingClientRect();
+        return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+      }
 
-canvas.addEventListener("pointerdown", (e) => {
-  canvas.setPointerCapture(e.pointerId);
-  currentStroke = { color: penColor, size: parseInt($("#pensize").value, 10), points: [canvasPoint(e)] };
-});
-canvas.addEventListener("pointermove", (e) => {
-  if (!currentStroke) return;
-  currentStroke.points.push(canvasPoint(e));
-  redraw();
-});
-canvas.addEventListener("pointerup", () => {
-  if (!currentStroke) return;
-  if (currentStroke.points.length > 1) strokes.push(currentStroke);
-  currentStroke = null;
-  redraw();
-  scheduleSave();
-  renderFiles();
-});
+      canvas.addEventListener("pointerdown", (e) => {
+        canvas.setPointerCapture(e.pointerId);
+        currentStroke = { color: penColor, size: parseInt($("#pensize").value, 10), points: [canvasPoint(e)] };
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (!currentStroke) return;
+        currentStroke.points.push(canvasPoint(e));
+        redraw();
+      });
+      canvas.addEventListener("pointerup", () => {
+        if (!currentStroke) return;
+        if (currentStroke.points.length > 1) strokes.push(currentStroke);
+        currentStroke = null;
+        redraw();
+        scheduleSave();
+        renderFiles();
+      });
 
-document.querySelectorAll(".swatch").forEach((s) => {
-  s.addEventListener("click", () => {
-    document.querySelectorAll(".swatch").forEach((x) => x.classList.remove("active"));
-    s.classList.add("active");
-    penColor = s.dataset.color;
-  });
-});
-$("#undo").addEventListener("click", () => { strokes.pop(); redraw(); scheduleSave(); });
-$("#clearsketch").addEventListener("click", () => { strokes = []; redraw(); scheduleSave(); renderFiles(); });
-window.addEventListener("resize", sizeCanvas);
+      document.querySelectorAll(".swatch").forEach((s) => {
+        s.addEventListener("click", () => {
+          document.querySelectorAll(".swatch").forEach((x) => x.classList.remove("active"));
+          s.classList.add("active");
+          penColor = s.dataset.color;
+        });
+      });
+      $("#undo").addEventListener("click", () => {
+        strokes.pop();
+        redraw();
+        scheduleSave();
+      });
+      $("#clearsketch").addEventListener("click", () => {
+        strokes = [];
+        redraw();
+        scheduleSave();
+        renderFiles();
+      });
+      window.addEventListener("resize", sizeCanvas);
 
-// Rasterize the sketch at 150 DPI of the sheet size for blocking.png.
-function sketchPng() {
-  if (strokes.length === 0) return null;
-  const w = Math.round((inches(state.format.width) || 5) * 150);
-  const h = Math.round((inches(state.format.height) || 7) * 150);
-  const off = document.createElement("canvas");
-  off.width = w; off.height = h;
-  redraw(off.getContext("2d"), w, h);
-  return off.toDataURL("image/png").split(",")[1];
-}
+      // Rasterize the sketch at 150 DPI of the sheet size for blocking.png.
+      function sketchPng() {
+        if (strokes.length === 0) return null;
+        const w = Math.round((inches(state.format.width) || 5) * 150);
+        const h = Math.round((inches(state.format.height) || 7) * 150);
+        const off = document.createElement("canvas");
+        off.width = w;
+        off.height = h;
+        redraw(off.getContext("2d"), w, h);
+        return off.toDataURL("image/png").split(",")[1];
+      }
 
-// ------------------------------------------------------------- format
+      // ------------------------------------------------------------- format
 
-function fillFormatInputs() {
-  const f = state.format;
-  $("#f-kind").value = f.kind || "";
-  $("#f-width").value = f.width || "";
-  $("#f-height").value = f.height || "";
-  $("#f-bleed").value = f.bleed || "";
-  $("#f-safe").value = f.safeZone || "";
-  $("#f-intent").value = state.printIntent;
-  const w = inches(f.width), h = inches(f.height);
-  $("#f-orient").value = w !== null && h !== null && w > h ? "landscape" : "portrait";
-  const preset = Object.entries(formats).find(([, p]) =>
-    p.kind === f.kind && p.width === f.width && p.height === f.height);
-  $("#f-preset").value = preset ? preset[0] : "";
-  renderFormatPreview();
-}
+      function fillFormatInputs() {
+        const f = state.format;
+        $("#f-kind").value = f.kind || "";
+        $("#f-width").value = f.width || "";
+        $("#f-height").value = f.height || "";
+        $("#f-bleed").value = f.bleed || "";
+        $("#f-safe").value = f.safeZone || "";
+        $("#f-intent").value = state.printIntent;
+        const w = inches(f.width),
+          h = inches(f.height);
+        $("#f-orient").value = w !== null && h !== null && w > h ? "landscape" : "portrait";
+        const preset = Object.entries(formats).find(
+          ([, p]) => p.kind === f.kind && p.width === f.width && p.height === f.height,
+        );
+        $("#f-preset").value = preset ? preset[0] : "";
+        renderFormatPreview();
+      }
 
-function readFormatInputs() {
-  state.format = {
-    kind: $("#f-kind").value.trim() || "custom",
-    width: $("#f-width").value.trim(),
-    height: $("#f-height").value.trim(),
-    bleed: $("#f-bleed").value.trim() || "0.125in",
-    safeZone: $("#f-safe").value.trim() || "0.25in",
-  };
-  state.printIntent = $("#f-intent").value;
-  renderFormatPreview();
-  updateHeader();
-  scheduleSave();
-}
+      function readFormatInputs() {
+        state.format = {
+          kind: $("#f-kind").value.trim() || "custom",
+          width: $("#f-width").value.trim(),
+          height: $("#f-height").value.trim(),
+          bleed: $("#f-bleed").value.trim() || "0.125in",
+          safeZone: $("#f-safe").value.trim() || "0.25in",
+        };
+        state.printIntent = $("#f-intent").value;
+        renderFormatPreview();
+        updateHeader();
+        scheduleSave();
+      }
 
-function renderFormatPreview() {
-  const w = inches(state.format.width), h = inches(state.format.height);
-  const box = $("#fmtbox");
-  if (!w || !h) { box.style.width = box.style.height = "0"; $("#fmtcap").textContent = "Set a width and height."; return; }
-  const scale = Math.min(180 / w, 180 / h);
-  box.style.width = (w * scale) + "px";
-  box.style.height = (h * scale) + "px";
-  const safe = inches(state.format.safeZone) || 0;
-  const inset = safe * scale;
-  const safeBox = $("#fmtsafe");
-  safeBox.style.inset = inset + "px";
-  $("#fmtcap").textContent =
-    `${state.format.width} × ${state.format.height} trim, ${state.format.bleed} bleed, ` +
-    `${state.format.safeZone} safe zone (dashed). Sketch canvas follows this shape.`;
-}
+      function renderFormatPreview() {
+        const w = inches(state.format.width),
+          h = inches(state.format.height);
+        const box = $("#fmtbox");
+        if (!w || !h) {
+          box.style.width = box.style.height = "0";
+          $("#fmtcap").textContent = "Set a width and height.";
+          return;
+        }
+        const scale = Math.min(180 / w, 180 / h);
+        box.style.width = w * scale + "px";
+        box.style.height = h * scale + "px";
+        const safe = inches(state.format.safeZone) || 0;
+        const inset = safe * scale;
+        const safeBox = $("#fmtsafe");
+        safeBox.style.inset = inset + "px";
+        $("#fmtcap").textContent =
+          `${state.format.width} × ${state.format.height} trim, ${state.format.bleed} bleed, ` +
+          `${state.format.safeZone} safe zone (dashed). Sketch canvas follows this shape.`;
+      }
 
-$("#f-preset").addEventListener("change", () => {
-  const p = formats[$("#f-preset").value];
-  if (!p) return;
-  state.format = { kind: p.kind, width: p.width, height: p.height, bleed: p.bleed, safeZone: p.safeZone };
-  fillFormatInputs();
-  updateHeader();
-  scheduleSave();
-  sizeCanvas();
-});
-$("#f-orient").addEventListener("change", () => {
-  const w = inches($("#f-width").value), h = inches($("#f-height").value);
-  const wantLandscape = $("#f-orient").value === "landscape";
-  if (w !== null && h !== null && (w > h) !== wantLandscape) {
-    const tmp = $("#f-width").value;
-    $("#f-width").value = $("#f-height").value;
-    $("#f-height").value = tmp;
-  }
-  readFormatInputs();
-  sizeCanvas();
-});
-for (const id of ["f-kind", "f-width", "f-height", "f-bleed", "f-safe", "f-intent"]) {
-  $("#" + id).addEventListener("input", () => { readFormatInputs(); if (id === "f-width" || id === "f-height") sizeCanvas(); });
-}
+      $("#f-preset").addEventListener("change", () => {
+        const p = formats[$("#f-preset").value];
+        if (!p) return;
+        state.format = { kind: p.kind, width: p.width, height: p.height, bleed: p.bleed, safeZone: p.safeZone };
+        fillFormatInputs();
+        updateHeader();
+        scheduleSave();
+        sizeCanvas();
+      });
+      $("#f-orient").addEventListener("change", () => {
+        const w = inches($("#f-width").value),
+          h = inches($("#f-height").value);
+        const wantLandscape = $("#f-orient").value === "landscape";
+        if (w !== null && h !== null && w > h !== wantLandscape) {
+          const tmp = $("#f-width").value;
+          $("#f-width").value = $("#f-height").value;
+          $("#f-height").value = tmp;
+        }
+        readFormatInputs();
+        sizeCanvas();
+      });
+      for (const id of ["f-kind", "f-width", "f-height", "f-bleed", "f-safe", "f-intent"]) {
+        $("#" + id).addEventListener("input", () => {
+          readFormatInputs();
+          if (id === "f-width" || id === "f-height") sizeCanvas();
+        });
+      }
 
-// ------------------------------------------------------------- finish
+      // ------------------------------------------------------------- finish
 
-$("#finish").addEventListener("click", async () => {
-  if (!confirm("Finish intake? This writes notes.md, manifest.json" + (strokes.length ? ", blocking.png" : "") + " and stops the intake server.")) return;
-  $("#finish").disabled = true;
-  try {
-    await api("/api/finish", {
-      notes: state.notes.filter((n) => n.text.trim()),
-      inspo: state.inspo.filter((n) => n.text.trim()),
-      items: state.items,
-      format: state.format,
-      printIntent: state.printIntent,
-      sketchStrokes: strokes,
-      sketchPngBase64: sketchPng(),
-    });
-    $("#done-overlay").style.display = "flex";
-  } catch (err) {
-    alert("Finish failed: " + err.message);
-    $("#finish").disabled = false;
-  }
-});
+      $("#finish").addEventListener("click", async () => {
+        if (
+          !confirm(
+            "Finish intake? This writes notes.md, manifest.json" +
+              (strokes.length ? ", blocking.png" : "") +
+              " and stops the intake server.",
+          )
+        )
+          return;
+        $("#finish").disabled = true;
+        try {
+          await api("/api/finish", {
+            notes: state.notes.filter((n) => n.text.trim()),
+            inspo: state.inspo.filter((n) => n.text.trim()),
+            items: state.items,
+            format: state.format,
+            printIntent: state.printIntent,
+            sketchStrokes: strokes,
+            sketchPngBase64: sketchPng(),
+          });
+          $("#done-overlay").style.display = "flex";
+        } catch (err) {
+          alert("Finish failed: " + err.message);
+          $("#finish").disabled = false;
+        }
+      });
 
-function updateHeader() {
-  $("#title").textContent = `Intake · ${project.title}`;
-  document.title = `Intake · ${project.title}`;
-  const f = state.format;
-  $("#fmtline").textContent = f && f.width ? `${f.kind} · ${f.width} × ${f.height}` : "format not set";
-}
+      function updateHeader() {
+        $("#title").textContent = `Intake · ${project.title}`;
+        document.title = `Intake · ${project.title}`;
+        const f = state.format;
+        $("#fmtline").textContent = f && f.width ? `${f.kind} · ${f.width} × ${f.height}` : "format not set";
+      }
 
-// --------------------------------------------------------------- init
+      // --------------------------------------------------------------- init
 
-(async function init() {
-  const data = await api("/api/project");
-  project = data.project;
-  state = data.state;
-  files = data.files;
-  formats = data.formats;
-  strokes = state.sketchStrokes || [];
-  state.inspo = state.inspo || []; // older intake-state.json may predate the tab
-  const presetSel = $("#f-preset");
-  for (const [id, p] of Object.entries(formats)) {
-    const opt = document.createElement("option");
-    opt.value = id;
-    opt.textContent = p.label;
-    presetSel.appendChild(opt);
-  }
-  updateHeader();
-  fillFormatInputs();
-  renderNotes();
-  renderInspo();
-  renderFiles();
-  sizeCanvas();
-  $("#savestatus").textContent = "saved";
-})();
-</script>
-</body>
+      (async function init() {
+        const data = await api("/api/project");
+        project = data.project;
+        state = data.state;
+        files = data.files;
+        formats = data.formats;
+        strokes = state.sketchStrokes || [];
+        state.inspo = state.inspo || []; // older intake-state.json may predate the tab
+        const presetSel = $("#f-preset");
+        for (const [id, p] of Object.entries(formats)) {
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = p.label;
+          presetSel.appendChild(opt);
+        }
+        updateHeader();
+        fillFormatInputs();
+        renderNotes();
+        renderInspo();
+        renderFiles();
+        sizeCanvas();
+        $("#savestatus").textContent = "saved";
+      })();
+    </script>
+  </body>
 </html>

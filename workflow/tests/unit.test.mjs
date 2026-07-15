@@ -4,8 +4,25 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createUnit, serialize, deserialize, listRefs, coverage, problems } from "../lib/unit.mjs";
 
-const box = (id, extra = {}) => ({ id, type: "box", points: [{ x: 0, y: 0 }, { x: 10, y: 10 }], ...extra });
-const curve = (id, extra = {}) => ({ id, type: "curve", points: [{ x: 0, y: 0 }, { x: 5, y: 8 }, { x: 10, y: 0 }], ...extra });
+const box = (id, extra = {}) => ({
+  id,
+  type: "box",
+  points: [
+    { x: 0, y: 0 },
+    { x: 10, y: 10 },
+  ],
+  ...extra,
+});
+const curve = (id, extra = {}) => ({
+  id,
+  type: "curve",
+  points: [
+    { x: 0, y: 0 },
+    { x: 5, y: 8 },
+    { x: 10, y: 0 },
+  ],
+  ...extra,
+});
 const domRef = (selector = "#title") => ({ type: "dom", selector });
 const regionRef = () => ({ type: "region", image: "files/inspo.png", rect: { x: 10, y: 20, w: 100, h: 50 } });
 
@@ -93,7 +110,10 @@ test("coverage reports bound and floating parts", () => {
     notes: [{ text: "only m1", binds: ["m1"] }],
   });
   const cov = coverage(u);
-  assert.deepEqual(cov.marks, [{ id: "m1", bound: true }, { id: "m2", bound: false }]);
+  assert.deepEqual(cov.marks, [
+    { id: "m1", bound: true },
+    { id: "m2", bound: false },
+  ]);
   assert.deepEqual(cov.refs, [{ id: "ref:0", bound: false }]);
   assert.deepEqual(cov.unbound, ["m2", "ref:0"]);
 });
