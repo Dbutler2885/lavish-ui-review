@@ -54,6 +54,7 @@ async function createChromeHarness({
     const classes = new Set();
     const el = {
       id,
+      children: [],
       hidden: false,
       disabled: false,
       value: "",
@@ -87,6 +88,9 @@ async function createChromeHarness({
       setAttribute(name, value) {
         this[name] = String(value);
       },
+      getAttribute(name) {
+        return this[name] === undefined ? null : this[name];
+      },
       addEventListener(type, handler) {
         listeners.set(type, handler);
       },
@@ -101,7 +105,14 @@ async function createChromeHarness({
       },
       appendChild(child) {
         child.parentElement = this;
+        this.children.push(child);
+        this.lastChild = child;
         return child;
+      },
+      replaceChildren(...children) {
+        this.children = [];
+        this.lastChild = null;
+        for (const child of children) this.appendChild(child);
       },
       click(event = {}) {
         this.clicked = true;
@@ -165,6 +176,9 @@ async function createChromeHarness({
       body: element("body"),
       getElementById(id) {
         return element(id);
+      },
+      querySelectorAll() {
+        return [];
       },
       addEventListener(type, handler, capture) {
         if (!documentListeners.has(type)) documentListeners.set(type, []);
@@ -264,6 +278,192 @@ test("chrome client replaces queued prompts with the same internal key", async (
   );
   assert.match(chrome.element("annotationPills").innerHTML, /Use plan B/);
   assert.doesNotMatch(chrome.element("annotationPills").innerHTML, /Use plan A/);
+});
+
+test("chrome client docks the queue editor at the top of the sidebar and drives the draw layer", async () => {
+  const chrome = await createChromeHarness();
+  const editor = chrome.element("queueEditor");
+  const input = chrome.element("queueEditorInput");
+
+  // Starts as a reserved-but-empty slot.
+  assert.equal(editor.getAttribute("data-empty"), "true");
+
+  // A selection reported by the artifact reveals the editor body, titles it,
+  // and focuses the composer so the user can type immediately.
+  chrome.sendFrameMessage({
+    type: "lavish:draw:state",
+    state: { active: true, hasSelection: true, summary: "1 element" },
+  });
+  assert.equal(editor.getAttribute("data-empty"), "false");
+  assert.equal(chrome.element("queueEditorTitle").textContent, "1 element");
+  assert.equal(input.focused, true);
+
+  // Queue posts the note back to the artifact as a draw command and clears the input.
+  input.value = "Make this bigger";
+  chrome.element("queueEditorQueue").click();
+  const queueCmd = chrome.postedToFrame.find((m) => m.type === "lavish:draw:command" && m.command === "queue");
+  assert.ok(queueCmd, "queue posts a draw command");
+  assert.equal(queueCmd.note, "Make this bigger");
+  assert.equal(input.value, "");
+
+  // The artifact clears the selection; the slot returns to reserved-empty.
+  chrome.sendFrameMessage({
+    type: "lavish:draw:state",
+    state: { hasSelection: false, summary: "Nothing selected" },
+  });
+  assert.equal(editor.getAttribute("data-empty"), "true");
+});
+
+test("chrome renders reported artifact states as tabs and switches the active state", async () => {
+  const chrome = await createChromeHarness();
+
+  chrome.sendFrameMessage({
+    type: "lavish:states",
+    states: ["default", "current-mobile", "proposed-desktop"],
+    active: "default",
+  });
+
+  const tabs = chrome.element("stateTabs");
+  assert.equal(tabs.hidden, false);
+  assert.deepEqual(
+    tabs.children.map((tab) => tab.textContent),
+    ["default", "current-mobile", "proposed-desktop"],
+  );
+  assert.equal(tabs.children[0].classList.contains("active"), true);
+
+  tabs.children[2].click();
+
+  assert.equal(chrome.postedToFrame.at(-1).type, "lavish:state:set");
+  assert.equal(chrome.postedToFrame.at(-1).state, "proposed-desktop");
+});
+
+test("chrome identifies queued feedback by state and counts it on the matching tab", async () => {
+  const chrome = await createChromeHarness();
+
+  chrome.sendFrameMessage({
+    type: "lavish:states",
+    states: ["default", "proposed-mobile"],
+    active: "proposed-mobile",
+  });
+  chrome.sendFrameMessage({
+    type: "lavish:queuePrompt",
+    prompt: {
+      prompt: "Tighten the mobile title",
+      target: { type: "visual-feedback-unit", feedback: { id: "u1", state: "proposed-mobile" } },
+    },
+  });
+
+  const tabs = chrome.element("stateTabs");
+  assert.equal(tabs.children[0].children.length, 0);
+  assert.equal(tabs.children[1].lastChild.textContent, "1");
+  assert.match(chrome.element("annotationPills").innerHTML, /proposed-mobile/);
+});
+
+test("chrome client cancel clears the queue editor and the artifact selection", async () => {
+  const chrome = await createChromeHarness();
+  const input = chrome.element("queueEditorInput");
+  chrome.sendFrameMessage({ type: "lavish:draw:state", state: { hasSelection: true, summary: "2 marks" } });
+  input.value = "scratch note";
+
+  chrome.element("queueEditorCancel").click();
+
+  assert.equal(input.value, "");
+  const clearCmd = chrome.postedToFrame.find((m) => m.type === "lavish:draw:command" && m.command === "clearSelection");
+  assert.ok(clearCmd, "cancel asks the artifact to clear its selection");
+});
+
+test("chrome client Delete key removes the current draw-layer selection", async () => {
+  const chrome = await createChromeHarness();
+  chrome.sendFrameMessage({ type: "lavish:draw:state", state: { hasSelection: true, summary: "1 mark" } });
+
+  chrome.dispatchDocumentKeydown({ key: "Delete", target: { tagName: "DIV" } });
+
+  const cmd = chrome.postedToFrame.find((m) => m.type === "lavish:draw:command" && m.command === "deleteSelection");
+  assert.ok(cmd, "Delete forwards a deleteSelection command to the artifact");
+});
+
+test("chrome client Delete key is ignored while typing and with no selection", async () => {
+  const chrome = await createChromeHarness();
+
+  // No selection: Delete does nothing.
+  chrome.dispatchDocumentKeydown({ key: "Delete", target: { tagName: "DIV" } });
+  assert.equal(
+    chrome.postedToFrame.some((m) => m.command === "deleteSelection"),
+    false,
+    "Delete with no selection is a no-op",
+  );
+
+  // Selection present but focus is in a text field: Delete edits text, not the mark.
+  chrome.sendFrameMessage({ type: "lavish:draw:state", state: { hasSelection: true, summary: "1 mark" } });
+  chrome.dispatchDocumentKeydown({ key: "Backspace", target: { tagName: "TEXTAREA" } });
+  assert.equal(
+    chrome.postedToFrame.some((m) => m.command === "deleteSelection"),
+    false,
+    "Delete while typing does not remove the mark",
+  );
+});
+
+test("chrome client Delete in the empty auto-focused comment box still deletes the mark", async () => {
+  const chrome = await createChromeHarness();
+  const input = chrome.element("queueEditorInput");
+  input.tagName = "TEXTAREA";
+  chrome.sendFrameMessage({ type: "lavish:draw:state", state: { hasSelection: true, summary: "1 mark" } });
+
+  input.value = "";
+  chrome.dispatchDocumentKeydown({ key: "Backspace", target: input });
+
+  assert.ok(
+    chrome.postedToFrame.some((m) => m.command === "deleteSelection"),
+    "empty comment box does not block deleting the selected mark",
+  );
+});
+
+test("chrome client Delete in a comment box with text edits the text, not the mark", async () => {
+  const chrome = await createChromeHarness();
+  const input = chrome.element("queueEditorInput");
+  input.tagName = "TEXTAREA";
+  chrome.sendFrameMessage({ type: "lavish:draw:state", state: { hasSelection: true, summary: "1 mark" } });
+
+  input.value = "make this bigger";
+  chrome.dispatchDocumentKeydown({ key: "Backspace", target: input });
+
+  assert.equal(
+    chrome.postedToFrame.some((m) => m.command === "deleteSelection"),
+    false,
+    "a comment in progress keeps Delete editing text",
+  );
+});
+
+test("chrome client removes queued prompts by internal key", async () => {
+  const chrome = await createChromeHarness();
+
+  chrome.sendFrameMessage({
+    type: "lavish:queuePrompt",
+    prompt: {
+      prompt: "Old drawing",
+      selector: "html",
+      tag: "feedback-unit",
+      text: "Old drawing",
+      _lavishQueueKey: "draw-unit:u1",
+    },
+  });
+  chrome.sendFrameMessage({
+    type: "lavish:queuePrompt",
+    prompt: {
+      prompt: "Keep this",
+      selector: "html",
+      tag: "feedback-unit",
+      text: "Keep this",
+      _lavishQueueKey: "draw-unit:u2",
+    },
+  });
+  chrome.sendFrameMessage({ type: "lavish:removeQueuedPrompt", queueKey: "draw-unit:u1" });
+
+  assert.deepEqual(
+    chrome.queued().map((prompt) => prompt.prompt),
+    ["Keep this"],
+  );
+  assert.doesNotMatch(chrome.element("annotationPills").innerHTML, /Old drawing/);
 });
 
 test("chrome client posts layout warnings from the artifact iframe", async () => {
@@ -699,6 +899,32 @@ test("chrome client strips the internal queue key before posting prompts", async
     domSnapshot: "uid=1 body",
   });
   assert.equal(chrome.queued().length, 0);
+});
+
+test("chrome client shows sent drawing feedback in the conversation", async () => {
+  const chrome = await createChromeHarness();
+
+  chrome.sendFrameMessage({
+    type: "lavish:queuePrompt",
+    prompt: {
+      prompt: "(visual guidance, no note) [1 mark]",
+      selector: "html",
+      tag: "feedback-unit",
+      text: "(visual guidance, no note) [1 mark]",
+      target: { type: "visual-feedback-unit", feedback: { id: "u1" } },
+      _lavishQueueKey: "draw-unit:u1",
+    },
+  });
+  chrome.element("send").onclick();
+  chrome.sendFrameMessage({ type: "lavish:snapshot", snapshot: "uid=1 body" });
+  await flushPromises();
+
+  const bubbles = chrome
+    .element("chatLog")
+    .children.map((child) => child.innerHTML)
+    .join("\n");
+  assert.match(bubbles, /You/);
+  assert.match(bubbles, /\(visual guidance, no note\) \[1 mark\]/);
 });
 
 test("chrome send and end carries the end intent with queued prompts", async () => {

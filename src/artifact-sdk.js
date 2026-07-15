@@ -565,6 +565,10 @@ export function createArtifactSdk(
     parent.postMessage({ type: "lavish:sendQueuedPrompts" }, "*");
   }
 
+  function removeQueuedPrompt(queueKey) {
+    parent.postMessage({ type: "lavish:removeQueuedPrompt", queueKey: String(queueKey || "") }, "*");
+  }
+
   function endSession() {
     parent.postMessage({ type: "lavish:endSession" }, "*");
   }
@@ -965,6 +969,34 @@ export function createArtifactSdk(
     selected = null;
   }
 
+  function annotationPageRect(target, options = {}) {
+    const anchor = options.range ? null : annotationTargetEl(target);
+    const rect = options.range ? options.range.getBoundingClientRect() : anchor.getBoundingClientRect();
+    return {
+      x: rect.left + window.scrollX,
+      y: rect.top + window.scrollY,
+      w: rect.width,
+      h: rect.height,
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  function tryUnifiedFeedback(target, options = {}) {
+    const unified = /** @type {any} */ (window).lavishUnifiedFeedback;
+    if (!unified || typeof unified.selectReference !== "function") return false;
+    const c = options.context || context(annotationTargetEl(target));
+    closeCard();
+    unified.selectReference(c, {
+      rect: annotationPageRect(target, options),
+      additive: Boolean(options.additive),
+      shiftKey: Boolean(options.shiftKey),
+    });
+    return true;
+  }
+
   function showAnnotationCard(target, options = {}) {
     const root = ensureShadow();
     closeCard();
@@ -998,7 +1030,7 @@ export function createArtifactSdk(
     card.innerHTML =
       '<div class="lavish-heading">' +
       heading +
-      '</div><textarea placeholder="' +
+      '</div><textarea name="annotation-comment" placeholder="' +
       placeholder +
       '"></textarea><div class="lavish-hint">Enter to queue &middot; ' +
       (/Mac|iP(hone|ad|od)/.test(navigator.platform) ? "⌘" : "Ctrl") +
@@ -1035,6 +1067,7 @@ export function createArtifactSdk(
 
   /** @type {Window & { lavish?: unknown }} */ (window).lavish = {
     queuePrompt,
+    removeQueuedPrompt,
     sendQueuedPrompts,
     endSession,
     getQueuedPrompts: () => [],
@@ -1127,6 +1160,7 @@ export function createArtifactSdk(
       if (!c) return;
 
       ignoreNextClick = true;
+      if (tryUnifiedFeedback(c.element, { context: c, range: c.range })) return;
       showAnnotationCard(c.element, { context: c, range: c.range });
     },
     true,
@@ -1148,6 +1182,7 @@ export function createArtifactSdk(
         ignoreNextClick = false;
         return;
       }
+      if (tryUnifiedFeedback(event.target, { additive: event.shiftKey, shiftKey: event.shiftKey })) return;
       showAnnotationCard(event.target);
     },
     true,

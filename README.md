@@ -43,6 +43,21 @@ Lavish Editor is an [AXI](https://axi.md), which means -
 - It's optimized for agent ergonomics. TOON output, long polling, and contextual disclosure making it highly token efficient.
 - The skill and hooks below only handle discovery; agents learn to use the AXI by using it.
 
+## Frontend Workflow Workspace
+
+This fork now also contains the consolidated `lavish-frontend-workflow` workspace under [`workflow/`](workflow/).
+That workspace owns the intent store, mockup projects, renderer, image-packet generator, edit queue, workflow scripts, PRD, and implementation slices.
+The Lavish review surface in this repo is one tool in that workflow: it supplies the pixel drawing layer, DOM binding, and unit cueing used during review.
+
+Useful commands from the repo root:
+
+```sh
+pnpm run workflow:test
+pnpm run workflow:status
+pnpm run workflow:render -- <slug> [screen.html]
+pnpm run workflow:review -- <slug> [screen.html]
+```
+
 ## Quick Start
 
 Install the Lavish skill in the [Agent Skills](https://agentskills.io) format with [`npx skills`](https://github.com/vercel-labs/skills):

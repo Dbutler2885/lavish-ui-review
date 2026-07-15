@@ -12,6 +12,7 @@
     "skills/lavish",
     "lavish-editor-marketing/renders/lavish-editor-marketing.gif",
     "LICENSE",
+    "workflow",
     "README.md"
   ],
   "scripts": {
@@ -25,7 +26,11 @@
     "prepack": "npm run build",
     "prepare": "npm run build",
     "test": "node --test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "workflow:test": "node --test workflow/tests/*.test.mjs",
+    "workflow:status": "bash workflow/bin/fe-status.sh",
+    "workflow:render": "bash workflow/bin/fe-render.sh",
+    "workflow:review": "bash workflow/bin/fe-review.sh"
   },
   "dependencies": {
     "@tailwindcss/browser": "4.2.4",

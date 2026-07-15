@@ -736,6 +736,87 @@ test("feedback next step tells agents to keep polling without timeout flag", () 
   assert.doesNotMatch(output.next_step, /above 10 minutes/);
 });
 
+test("visual feedback poll output reshapes units to image + marks + elements + note and drops noise", () => {
+  const output = createPollOutput({
+    file: "/tmp/report.html",
+    response: {
+      status: "feedback",
+      dom_snapshot: "",
+      prompts: [
+        {
+          uid: "1",
+          prompt: "one column [2 marks]",
+          selector: "html > div:nth-of-type(1)",
+          tag: "feedback-unit",
+          text: "one column [2 marks]",
+          target: {
+            type: "visual-feedback-unit",
+            feedback: {
+              v: 1,
+              id: "u1",
+              state: "default",
+              drawingGroups: [
+                { id: "m1", label: "A", markIds: ["m1"], markTypes: ["box"], tags: [] },
+                { id: "m2", label: "B", markIds: ["m2"], markTypes: ["arrow"], tags: [] },
+              ],
+              htmlRefs: [
+                {
+                  id: "html-1",
+                  uid: "7",
+                  type: "section",
+                  selector: "main > section:nth-of-type(2)",
+                  text: "Last time",
+                  boundTo: ["m1", "m2"],
+                },
+              ],
+              notes: [{ text: "one column", boundTo: ["m1", "m2"] }],
+              images: {
+                annotatedDrawings: "generated-from-drawing-overlay",
+                drawingOverlayPngPath: "/tmp/lavish-feedback/u1/drawing-overlay.png",
+                visualPath: "/tmp/lavish-feedback/u1/annotated.png",
+                assets: [
+                  { id: "annotated", kind: "annotated-composite-png", path: "/tmp/lavish-feedback/u1/annotated.png" },
+                ],
+              },
+              visualPath: "/tmp/lavish-feedback/u1/annotated.png",
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  const unit = output.prompts[0];
+  // Kept, low-noise shape.
+  assert.deepEqual(unit, {
+    tag: "feedback-unit",
+    id: "u1",
+    state: "default",
+    image: "/tmp/lavish-feedback/u1/annotated.png",
+    marks: "2 marks: 1 box, 1 arrow",
+    elements: [{ uid: "7", selector: "main > section:nth-of-type(2)", tag: "section", text: "Last time" }],
+    note: "one column",
+  });
+  // Noise is gone.
+  assert.equal(Object.hasOwn(unit, "target"), false);
+  assert.equal(Object.hasOwn(unit, "drawingGroups"), false);
+  assert.equal(Object.hasOwn(unit, "selector"), false);
+  assert.equal(JSON.stringify(unit).includes("bytes"), false);
+  assert.equal(JSON.stringify(unit).includes("drawing-overlay"), false);
+
+  assert.match(output.next_step, /open the .?image.? on each feedback unit/);
+  assert.match(output.next_step, /image-capable tool/);
+});
+
+test("visual feedback poll output passes through non-feedback prompts unchanged", () => {
+  const message = { uid: "", prompt: "hello", selector: "", tag: "message", text: "Freeform message" };
+  const output = createPollOutput({
+    file: "/tmp/report.html",
+    response: { status: "feedback", dom_snapshot: "", prompts: [message] },
+  });
+  assert.deepEqual(output.prompts[0], message);
+});
+
 test("layout warning feedback tells agents to fix layout before involving the human", () => {
   const output = createPollOutput({
     file: "/tmp/report.html",

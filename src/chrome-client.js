@@ -25,6 +25,17 @@ const sendMenu = /** @type {HTMLDivElement} */ (document.getElementById("sendMen
 const sendFromMenuButton = /** @type {HTMLButtonElement} */ (document.getElementById("sendFromMenu"));
 const sendAndEndButton = /** @type {HTMLButtonElement} */ (document.getElementById("sendAndEnd"));
 const annotationSwitch = /** @type {HTMLButtonElement} */ (document.getElementById("annotation"));
+const drawToolbar = /** @type {HTMLDivElement} */ (document.getElementById("drawToolbar"));
+const drawToggle = /** @type {HTMLButtonElement} */ (document.getElementById("drawToggle"));
+const drawStatus = /** @type {HTMLSpanElement} */ (document.getElementById("drawStatus"));
+const drawToolButtons = /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll("[data-draw-tool]")]);
+const drawStrokeButtons = /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll("[data-draw-stroke]")]);
+const drawActionButtons = /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll("[data-draw-action]")]);
+const queueEditor = /** @type {HTMLDivElement} */ (document.getElementById("queueEditor"));
+const queueEditorTitle = /** @type {HTMLDivElement} */ (document.getElementById("queueEditorTitle"));
+const queueEditorInput = /** @type {HTMLTextAreaElement} */ (document.getElementById("queueEditorInput"));
+const queueEditorQueue = /** @type {HTMLButtonElement} */ (document.getElementById("queueEditorQueue"));
+const queueEditorCancel = /** @type {HTMLButtonElement} */ (document.getElementById("queueEditorCancel"));
 const panel = /** @type {HTMLElement} */ (document.getElementById("panel"));
 const panelToggle = /** @type {HTMLButtonElement} */ (document.getElementById("panelToggle"));
 const panelReopen = /** @type {HTMLButtonElement} */ (document.getElementById("panelReopen"));
@@ -60,9 +71,12 @@ const layoutGateCopy = /** @type {HTMLParagraphElement} */ (document.getElementB
 const layoutGateAction = /** @type {HTMLButtonElement} */ (document.getElementById("layoutGateAction"));
 const layoutIssueBanner = /** @type {HTMLDivElement} */ (document.getElementById("layoutIssueBanner"));
 const sendHint = /** @type {HTMLSpanElement} */ (document.getElementById("sendHint"));
+const stateTabs = /** @type {HTMLDivElement} */ (document.getElementById("stateTabs"));
 const artifactSrc = frame.dataset.artifactSrc || frame.getAttribute?.("data-artifact-src") || frame.src || "";
 
 const queued = loadQueuedPrompts();
+let artifactStates = [];
+let activeArtifactState = "";
 let annotation = true;
 let ended = false;
 let agentPresence = "waiting";
@@ -85,6 +99,16 @@ let workingBubble = null;
 let submitQueuedPromise = null;
 let submitQueuedAgain = false;
 let lastScroll = { x: 0, y: 0 };
+const drawState = {
+  active: false,
+  tool: "select",
+  stroke: "#ff2d55",
+  canUndo: false,
+  canRedo: false,
+  canGroup: false,
+  summary: "Nothing selected",
+  hasSelection: false,
+};
 /** @type {ReturnType<typeof setTimeout> | undefined} */
 let copyHintTimer;
 /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -113,6 +137,19 @@ function loadQueuedPrompts() {
   }
 }
 
+function promptSurfaceState(prompt) {
+  return String(prompt?.target?.feedback?.state || "").trim();
+}
+
+function queuedStateCounts() {
+  const counts = new Map();
+  for (const prompt of queued) {
+    const state = promptSurfaceState(prompt);
+    if (state) counts.set(state, (counts.get(state) || 0) + 1);
+  }
+  return counts;
+}
+
 function persistQueuedPrompts() {
   try {
     if (queued.length) {
@@ -127,13 +164,17 @@ function persistQueuedPrompts() {
 
 function render() {
   annotationPills.innerHTML = queued
-    .map(
-      (prompt, index) =>
-        '<div class="pill-wrap"><div class="pill"><span class="pill-preview">' +
+    .map((prompt, index) => {
+      const state = promptSurfaceState(prompt);
+      return (
+        '<div class="pill-wrap"><div class="pill">' +
+        (state ? '<span class="pill-state">' + escapeHtml(state) + "</span>" : "") +
+        '<span class="pill-preview">' +
         escapeHtml(prompt.prompt) +
         '</span><button class="pill-close" type="button" aria-label="Remove queued prompt" data-index="' +
         index +
         '"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false"><path d="M1 1L9 9M9 1L1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div><div class="pill-tooltip">' +
+        (state ? '<div class="tooltip-label">State</div><div>' + escapeHtml(state) + "</div>" : "") +
         (prompt.selector
           ? '<div class="tooltip-label">Target</div><div class="pill-tooltip-target">' +
             escapeHtml(prompt.selector) +
@@ -141,8 +182,9 @@ function render() {
           : "") +
         '<div class="tooltip-label">Prompt</div><div class="pill-tooltip-prompt">' +
         escapeHtml(prompt.prompt) +
-        "</div></div></div>",
-    )
+        "</div></div></div>"
+      );
+    })
     .join("");
 
   for (const button of annotationPills.querySelectorAll(".pill-close")) {
@@ -153,6 +195,7 @@ function render() {
     panelReopenCount.hidden = queued.length === 0;
     panelReopenCount.textContent = String(queued.length);
   }
+  renderStateTabs(artifactStates, activeArtifactState);
   updateSendState();
 }
 
@@ -280,6 +323,33 @@ function promptQueueKey(prompt) {
   return prompt && typeof prompt[internalQueueKeyField] === "string" ? prompt[internalQueueKeyField].trim() : "";
 }
 
+function removeQueuedPromptByKey(queueKey) {
+  const keyValue = String(queueKey || "").trim();
+  if (!keyValue) return;
+  const next = queued.filter((prompt) => promptQueueKey(prompt) !== keyValue);
+  if (next.length === queued.length) return;
+  queued.splice(0, queued.length, ...next);
+  persistQueuedPrompts();
+  render();
+}
+
+function sentPromptLabel(prompt) {
+  if (!prompt || typeof prompt !== "object") return "";
+  const tag = String(prompt.tag || "");
+  const targetType = String(prompt.target?.type || "");
+  if (tag === "feedback-unit" || targetType === "visual-feedback-unit" || targetType === "guidance-unit") {
+    return String(prompt.text || prompt.prompt || "Drawing feedback");
+  }
+  return String(prompt.prompt || "");
+}
+
+function sentPromptSummary(prompts) {
+  const labels = prompts.map(sentPromptLabel).filter(Boolean);
+  if (labels.length === 0) return "";
+  if (labels.length === 1) return labels[0];
+  return labels.map((label) => "- " + label).join("\n");
+}
+
 function enqueuePrompt(prompt) {
   if (!prompt || typeof prompt !== "object") return;
 
@@ -310,6 +380,116 @@ function postToFrame(message) {
   if (frame.contentWindow) frame.contentWindow.postMessage(message, "*");
 }
 
+function isEditableTarget(target) {
+  if (!target || typeof target !== "object") return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || Boolean(target.isContentEditable);
+}
+
+function renderDrawToolbar() {
+  if (!drawToolbar) return;
+  drawToolbar.classList.toggle("active", drawState.active);
+  drawToggle?.setAttribute("aria-pressed", String(drawState.active));
+  if (drawToggle) drawToggle.title = drawState.active ? "Disable markup layer" : "Enable markup layer";
+  for (const button of drawToolButtons) {
+    button.classList.toggle("active", button.dataset.drawTool === drawState.tool);
+  }
+  for (const button of drawStrokeButtons) {
+    button.classList.toggle("active", button.dataset.drawStroke === drawState.stroke);
+  }
+  for (const button of drawActionButtons) {
+    const action = button.dataset.drawAction;
+    button.disabled =
+      (action === "undo" && !drawState.canUndo) ||
+      (action === "redo" && !drawState.canRedo) ||
+      (action === "group" && !drawState.canGroup);
+  }
+  if (drawStatus) drawStatus.textContent = drawState.summary || "Nothing selected";
+}
+
+// The editing card is docked at the top of the sidebar rather than floating
+// over the artifact. It reveals its body when the artifact reports a selection
+// and keeps its reserved slot (empty placeholder) otherwise.
+function renderQueueEditor() {
+  if (!queueEditor) return;
+  const empty = !drawState.hasSelection;
+  const wasEmpty = queueEditor.getAttribute("data-empty") === "true";
+  queueEditor.setAttribute("data-empty", String(empty));
+  if (queueEditorTitle) queueEditorTitle.textContent = empty ? "Queue an edit" : drawState.summary;
+  if (empty) {
+    if (!wasEmpty && queueEditorInput) queueEditorInput.value = "";
+    return;
+  }
+  // Focus the composer as the selection appears so the user can type immediately.
+  if (wasEmpty && queueEditorInput) queueEditorInput.focus();
+}
+
+function updateDrawState(state) {
+  if (!state || typeof state !== "object") return;
+  drawState.active = Boolean(state.active);
+  drawState.tool = String(state.tool || drawState.tool);
+  drawState.stroke = String(state.stroke || drawState.stroke);
+  drawState.canUndo = Boolean(state.canUndo);
+  drawState.canRedo = Boolean(state.canRedo);
+  drawState.canGroup = Boolean(state.canGroup);
+  drawState.summary = String(state.summary || "Nothing selected");
+  drawState.hasSelection = Boolean(state.hasSelection);
+  renderDrawToolbar();
+  renderQueueEditor();
+}
+
+function submitQueueEditor() {
+  sendDrawCommand({ command: "queue", note: queueEditorInput ? queueEditorInput.value : "" });
+  if (queueEditorInput) queueEditorInput.value = "";
+}
+
+function cancelQueueEditor() {
+  if (queueEditorInput) queueEditorInput.value = "";
+  sendDrawCommand({ command: "clearSelection" });
+}
+
+function sendDrawCommand(command) {
+  postToFrame({ type: "lavish:draw:command", ...command });
+}
+
+function renderStateTabs(states, active) {
+  if (!stateTabs) return;
+  const names = [...new Set((Array.isArray(states) ? states : []).map(String).filter(Boolean))];
+  artifactStates = names;
+  activeArtifactState = String(active || "");
+  const feedbackCounts = queuedStateCounts();
+  stateTabs.replaceChildren();
+  const visible = names.length > 1;
+  stateTabs.hidden = !visible;
+  document.body.classList.toggle("has-state-tabs", visible);
+  if (!visible) return;
+  for (const name of names) {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "state-tab";
+    tab.textContent = name;
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(name === active));
+    tab.classList.toggle("active", name === active);
+    tab.onclick = () => postToFrame({ type: "lavish:state:set", state: name });
+    const feedbackCount = feedbackCounts.get(name) || 0;
+    if (feedbackCount) {
+      const badge = document.createElement("span");
+      badge.className = "state-tab-count";
+      badge.textContent = String(feedbackCount);
+      badge.setAttribute("aria-label", feedbackCount === 1 ? "1 queued edit" : `${feedbackCount} queued edits`);
+      tab.appendChild(badge);
+    }
+    stateTabs.appendChild(tab);
+  }
+}
+
+function mountDrawToolbar() {
+  if (!drawToolbar) return;
+  postToFrame({ type: "lavish:draw:chromeMounted" });
+  sendDrawCommand({ command: "requestState" });
+}
+
 function requestSnapshot(action) {
   snapshotRequests.push(action);
   postToFrame({ type: "lavish:requestSnapshot" });
@@ -323,7 +503,6 @@ function sendQueued(endAfter) {
   if (text) {
     queued.push({ uid: "", prompt: text, selector: "", tag: "message", text: "Freeform message" });
     persistQueuedPrompts();
-    addChat("user", text);
     chatInput.value = "";
     render();
   }
@@ -381,6 +560,7 @@ async function submitQueuedOnce() {
     body: JSON.stringify(body),
   });
   if (!response.ok) throw new Error("failed to submit queued prompts");
+  addChat("user", sentPromptSummary(prompts));
   for (const prompt of prompts) {
     const index = queued.indexOf(prompt);
     if (index !== -1) queued.splice(index, 1);
@@ -714,6 +894,9 @@ window.addEventListener("message", (event) => {
   if (msg.type === "lavish:queuePrompt") {
     enqueuePrompt(msg.prompt);
   }
+  if (msg.type === "lavish:removeQueuedPrompt") {
+    removeQueuedPromptByKey(msg.queueKey);
+  }
   if (msg.type === "lavish:snapshot") {
     const snapshotAction = snapshotRequests.shift() || "submit";
     if (snapshotAction === "copy") {
@@ -730,6 +913,8 @@ window.addEventListener("message", (event) => {
     handleLayoutWarningsForGate(msg.layout_warnings);
     submitLayoutWarnings(msg.layout_warnings).catch(() => {});
   }
+  if (msg.type === "lavish:states") renderStateTabs(msg.states, msg.active);
+  if (msg.type === "lavish:draw:state") updateDrawState(msg.state);
   if (msg.type === "lavish:sendQueuedPrompts") sendQueued();
   if (msg.type === "lavish:endSession") endSession();
   if (msg.type === "lavish:toggleAnnotationMode") toggleAnnotationMode();
@@ -745,6 +930,37 @@ function toggleAnnotationMode() {
 }
 
 annotationSwitch.onclick = toggleAnnotationMode;
+if (drawToggle) {
+  drawToggle.onclick = () => sendDrawCommand({ command: "setActive", active: !drawState.active });
+}
+for (const button of drawToolButtons) {
+  button.addEventListener("click", () => {
+    if (!drawState.active) sendDrawCommand({ command: "setActive", active: true });
+    sendDrawCommand({ command: "setTool", tool: button.dataset.drawTool });
+  });
+}
+for (const button of drawStrokeButtons) {
+  button.addEventListener("click", () => {
+    if (!drawState.active) sendDrawCommand({ command: "setActive", active: true });
+    sendDrawCommand({ command: "setStroke", stroke: button.dataset.drawStroke });
+  });
+}
+for (const button of drawActionButtons) {
+  button.addEventListener("click", () => sendDrawCommand({ command: "action", action: button.dataset.drawAction }));
+}
+renderDrawToolbar();
+renderQueueEditor();
+
+if (queueEditorQueue) queueEditorQueue.onclick = submitQueueEditor;
+if (queueEditorCancel) queueEditorCancel.onclick = cancelQueueEditor;
+if (queueEditorInput) {
+  queueEditorInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      submitQueueEditor();
+    }
+  });
+}
 
 sendButton.onclick = () => sendQueued(false);
 sendFromMenuButton.onclick = () => sendQueued(false);
@@ -800,8 +1016,27 @@ document.addEventListener(
   },
   true,
 );
+// Delete/Backspace removes the current draw-layer selection. The editing card
+// lives in the chrome now, and selecting a mark auto-focuses its comment box, so
+// the keypress lands here rather than in the sandboxed artifact. Forward it when
+// there is a selection - but stand down while the user is actually editing text:
+// in the chat, or in the comment box once they've typed something. An empty,
+// just-auto-focused comment box still deletes the mark, which is the whole point.
+document.addEventListener(
+  "keydown",
+  (event) => {
+    if (event.key !== "Delete" && event.key !== "Backspace") return;
+    if (!drawState.hasSelection) return;
+    const inEmptyComposer = event.target === queueEditorInput && !queueEditorInput.value;
+    if (isEditableTarget(event.target) && !inEmptyComposer) return;
+    event.preventDefault();
+    sendDrawCommand({ command: "deleteSelection" });
+  },
+  true,
+);
 frame.addEventListener("load", () => {
   postToFrame({ type: "lavish:setAnnotationMode", enabled: annotation && !ended });
+  mountDrawToolbar();
   // Replay the pre-reload scroll position so hot reloads don't jump the artifact to the top.
   postToFrame({ type: "lavish:restoreScroll", x: lastScroll.x, y: lastScroll.y });
 });

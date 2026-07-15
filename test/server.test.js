@@ -18,7 +18,7 @@ import {
   resolveWatchTarget,
   serve,
 } from "../src/server.js";
-import { canonicalFile, sessionKey } from "../src/session-store.js";
+import { canonicalFile, sessionKey, SessionStore } from "../src/session-store.js";
 
 async function chromeClientSource() {
   return readFile(new URL("../src/chrome-client.js", import.meta.url), "utf8");
@@ -126,6 +126,15 @@ test("artifact SDK script is valid JavaScript", () => {
   const js = createSdkJs("abc");
 
   assert.doesNotThrow(() => new Function(js));
+});
+
+test("artifact SDK injects drawing helper primitive dependencies", () => {
+  const js = createSdkJs("abc");
+
+  assert.match(js, /const DEG=/);
+  assert.match(js, /const ARC_MIN_RADIUS=/);
+  assert.match(js, /const DRAW_TOOLS=/);
+  assert.match(js, /const GROUP_LABELS=/);
 });
 
 test("artifact SDK ignores Lavish-owned annotation UI", () => {
@@ -399,6 +408,17 @@ test("chrome top bar follows the design mock wordmark and overflow menu treatmen
   assert.doesNotMatch(html, /class="file-input"/);
   assert.doesNotMatch(html, /class="divider"/);
   assert.doesNotMatch(html, /class="file-icon"/);
+});
+
+test("chrome drawing toolbar uses cursor select, arch, and no removed curve/freehand-arrow tools", async () => {
+  const html = createChromeHtml({ key: "abc", file: "/tmp/artifact.html" });
+  const css = await chromeCssSource();
+
+  assert.match(html, /data-draw-tool="select"[^>]*title="Select marks and elements"[^>]*><svg\b/);
+  assert.match(html, /data-draw-tool="arc"[^>]*title="Arch"/);
+  assert.doesNotMatch(html, /data-draw-tool="arrowFreehand"/);
+  assert.doesNotMatch(html, /data-draw-tool="curve"/);
+  assert.match(css, /\.draw-tool svg\{width:16px;height:16px;?\}/);
 });
 
 test("overflow menu shows the artifact path with a copy affordance", async () => {
@@ -973,6 +993,60 @@ test("/artifact serves files copied under the artifact directory", async () => {
   }
 });
 
+test("session store strips raw guidance-unit coordinates before poll delivery", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "lavish-store-"));
+  try {
+    const artifact = path.join(dir, "artifact.html");
+    await writeFile(artifact, "<!doctype html><title>x</title>");
+    const store = new SessionStore(path.join(dir, "state.json"));
+    const session = await store.upsertSession(artifact, "http://127.0.0.1/session/test");
+    await store.queuePrompts(session.key, {
+      prompts: [
+        {
+          prompt: "this way [1 mark + 1 element]",
+          tag: "unit",
+          target: {
+            type: "guidance-unit",
+            unit: {
+              v: 1,
+              id: "u1",
+              state: "default",
+              refs: [{ type: "dom", selector: "button.start", rect: { x: 100, y: 20, w: 80, h: 30 } }],
+              marks: [
+                {
+                  id: "m1",
+                  type: "arrow",
+                  group: "draw-1",
+                  points: [
+                    { x: 1, y: 2 },
+                    { x: 3, y: 4 },
+                  ],
+                },
+              ],
+              notes: [{ text: "this way", binds: ["draw-1", "ref:0"] }],
+            },
+          },
+        },
+      ],
+    });
+    const feedback = await store.takeFeedback(session.key);
+    assert.equal(feedback.status, "feedback");
+    assert.ok("prompts" in feedback);
+    const prompt = feedback.prompts[0];
+    assert.equal(prompt.target.type, "visual-feedback-unit");
+    assert.deepEqual(prompt.target.feedback.drawingGroups[0].markIds, ["m1"]);
+    assert.deepEqual(prompt.target.feedback.htmlRefs, [
+      { id: "html-1", type: "dom", selector: "button.start", boundTo: ["draw-1"] },
+    ]);
+    const serialized = JSON.stringify(prompt.target);
+    assert.equal(serialized.includes('"points"'), false);
+    assert.equal(serialized.includes('"rect"'), false);
+    assert.equal(serialized.includes('"x"'), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("layout warnings wake the same long-poll feedback channel as human prompts", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "lavish-serve-"));
   const artifact = path.join(dir, "artifact.html");
@@ -1085,6 +1159,7 @@ test("/chrome-client.js serves the extracted chrome client script", async () => 
 
     assert.equal(res.status, 200);
     assert.match(res.headers.get("content-type") || "", /application\/javascript/);
+    assert.equal(res.headers.get("cache-control"), "no-store");
     assert.match(body, /const sessionData/);
     assert.match(body, /new EventSource\("\/events\/" \+ key\)/);
   } finally {
@@ -1102,12 +1177,30 @@ test("/chrome.css serves the extracted chrome stylesheet", async () => {
 
     assert.equal(res.status, 200);
     assert.match(res.headers.get("content-type") || "", /text\/css/);
+    assert.equal(res.headers.get("cache-control"), "no-store");
     assert.match(normalizeCssForAssertions(body), /--ink-900:#0f1115/);
     // Fork: the conversation panel overlays the artifact (single-column
     // layout, fixed panel, minimizable) instead of claiming a grid column.
     assert.match(normalizeCssForAssertions(body), /\.layout\{[^}]*grid-template-columns:minmax\(0,1fr\)[;}]/);
     assert.match(normalizeCssForAssertions(body), /\.panel\{[^}]*position:fixed/);
     assert.match(normalizeCssForAssertions(body), /\.panel\.minimized\{[^}]*transform:translateX/);
+  } finally {
+    await server.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("/sdk.js serves the injected draw layer without browser caching", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "lavish-serve-"));
+  const server = await serve({ port: 0, stateFile: path.join(dir, "state.json"), version: "9.9.9-test" });
+  try {
+    const res = await fetch(`http://127.0.0.1:${server.port}/sdk.js?key=abc`);
+    const body = await res.text();
+
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get("content-type") || "", /application\/javascript/);
+    assert.equal(res.headers.get("cache-control"), "no-store");
+    assert.match(body, /createDrawLayer/);
   } finally {
     await server.close();
     await rm(dir, { recursive: true, force: true });

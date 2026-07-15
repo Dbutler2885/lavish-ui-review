@@ -1,0 +1,11 @@
+projects/*
+!projects/.gitkeep
+state/*
+!state/.gitkeep
+data/*
+!data/.gitkeep
+# font binaries are reproducible from assets/fonts/catalog.json via pdf-fonts.sh sync
+assets/fonts/**/*.ttf
+.DS_Store
+node_modules/
+.lavish/

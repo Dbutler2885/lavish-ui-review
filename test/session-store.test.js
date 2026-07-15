@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -114,6 +114,56 @@ test("queued mermaid node prompts preserve node identity and drop unknown fields
       selector: "svg#mermaid-7 > g > g.node",
     });
     assert.equal(result.prompts[0].tag, "mermaid-node");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("queued visual feedback persists drawing overlay data URLs as image files", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "lavish-store-"));
+  try {
+    const stateFile = path.join(dir, "state.json");
+    const artifact = path.join(dir, "artifact.html");
+    await writeFile(artifact, "<button>Start session</button>");
+
+    const store = new SessionStore(stateFile);
+    const session = await store.upsertSession(artifact, "http://localhost:4387/session/test");
+    const imageBytes = Buffer.from("visual feedback image");
+    await store.queuePrompts(session.key, {
+      prompts: [
+        {
+          uid: "1",
+          prompt: "(visual guidance, no note) [1 mark]",
+          selector: "button",
+          tag: "feedback-unit",
+          text: "(visual guidance, no note) [1 mark]",
+          target: {
+            type: "visual-feedback-unit",
+            feedback: {
+              id: "u1",
+              state: "default",
+              images: { drawingOverlayPng: `data:image/png;base64,${imageBytes.toString("base64")}` },
+            },
+          },
+        },
+      ],
+    });
+
+    const result = feedbackResult(await store.takeFeedback(session.key));
+    const feedback = result.prompts[0].target.feedback;
+    assert.equal(feedback.images.drawingOverlayPng, undefined);
+    assert.equal(feedback.visualPath, path.join(dir, "feedback-assets", session.key, "u1", "drawing-overlay.png"));
+    assert.equal(feedback.images.visualPath, feedback.visualPath);
+    assert.equal(feedback.images.drawingOverlayPngPath, feedback.visualPath);
+    assert.deepEqual(feedback.images.assets, [
+      {
+        id: "drawing-overlay",
+        kind: "drawing-overlay-png",
+        path: feedback.visualPath,
+        bytes: imageBytes.length,
+      },
+    ]);
+    assert.deepEqual(await readFile(feedback.visualPath), imageBytes);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

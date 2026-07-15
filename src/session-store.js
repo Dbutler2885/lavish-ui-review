@@ -1,12 +1,19 @@
 import crypto from "node:crypto";
-import { readFile, realpath, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { normalizeMermaidNodeTarget } from "./mermaid-node.js";
+import { renderComposite } from "./visual-composite.js";
 
 export class SessionStore {
-  constructor(file) {
+  /**
+   * @param {string} file
+   * @param {{ assetDir?: string }} [options]
+   */
+  constructor(file, options = {}) {
     this.file = file;
+    const { assetDir } = options;
+    this.assetDir = assetDir || path.join(path.dirname(file), "feedback-assets");
   }
 
   async listSessions() {
@@ -59,7 +66,10 @@ export class SessionStore {
     const prompts = Array.isArray(payload.prompts) ? payload.prompts : [];
     const shouldEndSession = Boolean(payload.endSession || payload.end_session);
     const alreadyEnded = session.status === "ended";
-    const normalizedPrompts = prompts.map(normalizePrompt);
+    const normalizedPrompts = [];
+    for (const prompt of prompts) {
+      normalizedPrompts.push(await this.normalizePromptForSession(prompt, key, session.file));
+    }
     const userMessages = normalizedPrompts
       .filter((prompt) => prompt.tag === "message" && prompt.prompt)
       .map((prompt) => ({ role: "user", text: prompt.prompt, at: new Date().toISOString() }));
@@ -195,6 +205,16 @@ export class SessionStore {
   async writeState(state) {
     await writeFile(this.file, `${JSON.stringify(state, null, 2)}\n`);
   }
+
+  async normalizePromptForSession(prompt, key, artifactFile) {
+    const normalized = normalizePrompt(prompt);
+    if (normalized.target?.type !== "visual-feedback-unit") return normalized;
+    await persistVisualFeedbackAssets(normalized.target.feedback, {
+      dir: path.join(this.assetDir, key),
+      artifactFile,
+    });
+    return normalized;
+  }
 }
 
 export async function canonicalFile(file) {
@@ -252,6 +272,186 @@ function normalizeFiniteNumber(value) {
 function normalizeTarget(target) {
   if (!target || typeof target !== "object" || Array.isArray(target)) return null;
   if (target.type === "mermaid-node") return normalizeMermaidNodeTarget(target);
+  if (target.type === "visual-feedback-unit") return normalizeVisualFeedbackTarget(target);
+  if (target.type === "guidance-unit" && target.unit) {
+    return { type: "visual-feedback-unit", feedback: publicFeedbackFromLegacyUnit(target.unit) };
+  }
   // text-range and any other/legacy target shapes pass through unchanged.
   return JSON.parse(JSON.stringify(target));
+}
+
+function normalizeVisualFeedbackTarget(target) {
+  const feedback = target.feedback && typeof target.feedback === "object" ? target.feedback : {};
+  return {
+    type: "visual-feedback-unit",
+    feedback: {
+      v: 1,
+      id: String(feedback.id || ""),
+      state: String(feedback.state || "default"),
+      drawingGroups: normalizeDrawingGroups(feedback.drawingGroups),
+      htmlRefs: normalizeHtmlRefs(feedback.htmlRefs),
+      notes: normalizeFeedbackNotes(feedback.notes),
+      images: normalizeFeedbackImages(feedback.images),
+    },
+  };
+}
+
+function publicFeedbackFromLegacyUnit(unit) {
+  const marks = Array.isArray(unit.marks) ? unit.marks : [];
+  const drawingGroups = normalizeDrawingGroupsFromMarks(marks);
+  const groupIds = drawingGroups.map((group) => group.id);
+  const refs = Array.isArray(unit.refs) ? unit.refs : [];
+  const htmlRefs = refs.map((ref, index) => ({
+    id: "html-" + (index + 1),
+    type: String(ref?.type || "dom"),
+    selector: String(ref?.selector || ""),
+    boundTo: groupIds,
+  }));
+  const markToGroup = new Map();
+  for (const group of drawingGroups) for (const markId of group.markIds) markToGroup.set(markId, group.id);
+  const bindTargets = (binds = []) => {
+    const out = [];
+    for (const bind of binds) {
+      const text = String(bind || "");
+      if (text.startsWith("ref:")) {
+        const index = Number(text.slice(4));
+        if (htmlRefs[index]) out.push(htmlRefs[index].id);
+      } else if (groupIds.includes(text)) {
+        out.push(text);
+      } else if (markToGroup.has(text)) {
+        out.push(markToGroup.get(text));
+      }
+    }
+    return [...new Set(out)];
+  };
+  return {
+    v: 1,
+    id: String(unit.id || ""),
+    state: String(unit.state || "default"),
+    drawingGroups,
+    htmlRefs,
+    notes: (Array.isArray(unit.notes) ? unit.notes : []).map((note) => ({
+      text: String(note?.text || ""),
+      boundTo: bindTargets(note?.binds || []),
+    })),
+    images: drawingGroups.length
+      ? { annotatedDrawings: "generate-from-drawings" }
+      : { cleanScreenshot: "generate-on-send" },
+  };
+}
+
+function normalizeDrawingGroups(groups) {
+  if (!Array.isArray(groups)) return [];
+  return groups.map((group, index) => ({
+    id: String(group?.id || "draw-" + (index + 1)),
+    label: String(group?.label || String.fromCharCode(65 + index)),
+    markIds: Array.isArray(group?.markIds) ? group.markIds.map(String) : [],
+    markTypes: Array.isArray(group?.markTypes) ? group.markTypes.map(String) : [],
+    tags: Array.isArray(group?.tags) ? group.tags.map(String) : [],
+  }));
+}
+
+function normalizeDrawingGroupsFromMarks(marks) {
+  const groups = new Map();
+  for (const mark of marks) {
+    const key = String(mark?.group || mark?.id || "");
+    if (!key) continue;
+    if (!groups.has(key)) {
+      groups.set(key, { id: key, label: String.fromCharCode(65 + groups.size), markIds: [], markTypes: [], tags: [] });
+    }
+    const group = groups.get(key);
+    if (mark?.id) group.markIds.push(String(mark.id));
+    if (mark?.type && !group.markTypes.includes(String(mark.type))) group.markTypes.push(String(mark.type));
+    if (mark?.tag && !group.tags.includes(String(mark.tag))) group.tags.push(String(mark.tag));
+  }
+  return [...groups.values()];
+}
+
+function normalizeHtmlRefs(refs) {
+  if (!Array.isArray(refs)) return [];
+  return refs.map((ref, index) => ({
+    id: String(ref?.id || "html-" + (index + 1)),
+    uid: String(ref?.uid || ""),
+    type: String(ref?.type || "dom"),
+    selector: String(ref?.selector || ""),
+    text: String(ref?.text || ""),
+    boundTo: Array.isArray(ref?.boundTo) ? ref.boundTo.map(String) : [],
+  }));
+}
+
+function normalizeFeedbackNotes(notes) {
+  if (!Array.isArray(notes)) return [];
+  return notes.map((note) => ({
+    text: String(note?.text || ""),
+    boundTo: Array.isArray(note?.boundTo) ? note.boundTo.map(String) : [],
+  }));
+}
+
+function normalizeFeedbackImages(images) {
+  if (!images || typeof images !== "object" || Array.isArray(images)) return {};
+  const out = {};
+  if (typeof images.drawingOverlayPng === "string" && images.drawingOverlayPng.startsWith("data:image/png")) {
+    out.drawingOverlayPng = images.drawingOverlayPng;
+  }
+  if (typeof images.annotatedDrawings === "string") out.annotatedDrawings = images.annotatedDrawings;
+  if (typeof images.cleanScreenshot === "string") out.cleanScreenshot = images.cleanScreenshot;
+  return out;
+}
+
+async function persistVisualFeedbackAssets(feedback, { dir, artifactFile }) {
+  if (!feedback || typeof feedback !== "object") return;
+  const images = feedback.images && typeof feedback.images === "object" ? feedback.images : {};
+  const dataUrl = typeof images.drawingOverlayPng === "string" ? images.drawingOverlayPng : "";
+  const match = dataUrl.match(/^data:image\/png;base64,([A-Za-z0-9+/=\s]+)$/);
+  if (!match) return;
+
+  const unitDir = path.join(dir, sanitizePathPart(feedback.id));
+  await mkdir(unitDir, { recursive: true });
+  const imagePath = path.join(unitDir, "drawing-overlay.png");
+  const buffer = Buffer.from(match[1].replace(/\s/g, ""), "base64");
+  await writeFile(imagePath, buffer);
+
+  delete images.drawingOverlayPng;
+  images.drawingOverlayPngPath = imagePath;
+  const assets = [
+    {
+      id: "drawing-overlay",
+      kind: "drawing-overlay-png",
+      path: imagePath,
+      bytes: buffer.length,
+    },
+  ];
+
+  // Composite the marks onto a screenshot of the artifact so the agent
+  // inspects the marks-on-the-page image, not the transparent overlay.
+  // Best-effort: on any failure the transparent overlay stays the visualPath.
+  let visualPath = imagePath;
+  if (artifactFile) {
+    const compositePath = await renderComposite({
+      artifactFile,
+      overlayPngPath: imagePath,
+      outPath: path.join(unitDir, "annotated.png"),
+      state: String(feedback.state || "default"),
+    });
+    if (compositePath) {
+      visualPath = compositePath;
+      const compositeStats = await stat(compositePath);
+      assets.unshift({
+        id: "annotated",
+        kind: "annotated-composite-png",
+        path: compositePath,
+        bytes: compositeStats.size,
+      });
+    }
+  }
+
+  images.visualPath = visualPath;
+  images.assets = assets;
+  feedback.visualPath = visualPath;
+}
+
+function sanitizePathPart(value) {
+  const text = String(value || "").trim();
+  const safe = text.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return safe || crypto.randomUUID();
 }

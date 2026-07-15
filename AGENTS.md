@@ -2,6 +2,24 @@
 
 This file provides guidance to coding agents when working with code in this repository.
 
+## Consolidated Frontend Workflow
+
+The `workflow/` directory is the consolidated `lavish-frontend-workflow` workspace.
+It was migrated from the sibling `lavish-axi-web` repo so this fork owns both the modified Lavish review surface and the workflow that uses it.
+The workflow keeps its own manual at [`workflow/AGENTS.md`](workflow/AGENTS.md), PRD and slices under [`workflow/thoughts/shared/plans/lavish-frontend-workflow/`](workflow/thoughts/shared/plans/lavish-frontend-workflow/), and project files under [`workflow/projects/`](workflow/projects/).
+
+Use these root commands for the workflow layer:
+
+```sh
+pnpm run workflow:test
+pnpm run workflow:status
+pnpm run workflow:render -- <slug> [screen.html]
+pnpm run workflow:review -- <slug> [screen.html]
+```
+
+When working inside `workflow/`, follow `workflow/AGENTS.md` in addition to this file.
+The modified Lavish surface remains in `src/`; the workflow layer should call it as a tool, not duplicate the review UI.
+
 ## Commands
 
 ```sh

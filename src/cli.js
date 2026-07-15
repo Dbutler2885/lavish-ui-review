@@ -318,9 +318,9 @@ export function createPollOutput({ file, response }) {
         ...(sessionEnded ? { session_ended: true, ...(endedBy ? { ended_by: endedBy } : {}) } : {}),
       },
       dom_snapshot: response.dom_snapshot || "",
-      prompts: response.prompts || [],
+      prompts: (response.prompts || []).map(publicizePrompt),
       ...(layoutWarnings.length > 0 ? { layout_warnings: layoutWarnings } : {}),
-      next_step: createFeedbackNextStep(file, layoutWarnings, sessionEnded, endedBy),
+      next_step: createFeedbackNextStep(file, layoutWarnings, sessionEnded, endedBy, response.prompts || []),
     };
   }
   if (response.status === "ended") {
@@ -335,19 +335,87 @@ export function createPollOutput({ file, response }) {
   };
 }
 
-function createFeedbackNextStep(file, layoutWarnings, sessionEnded, endedBy) {
+function createFeedbackNextStep(file, layoutWarnings, sessionEnded, endedBy, prompts = []) {
   const count = layoutWarnings.length;
+  const visualPaths = visualFeedbackPaths(prompts);
+  const visualNote =
+    visualPaths.length > 0
+      ? `Before applying visual feedback, open the \`image\` on each feedback unit with an image-capable tool. `
+      : "";
   if (sessionEnded) {
     const layoutNote =
       count > 0 ? `${count} layout warning${count === 1 ? "" : "s"} arrived alongside this final feedback. ` : "";
     if (endedBy === "user") {
-      return `${layoutNote}This was the last feedback before the user ended the session. Stop polling ${file} and do not reopen it - deliver any remaining updates directly in this conversation instead. Only run \`lavish-axi ${file} --reopen\` if the user explicitly asks for further review or something genuinely important needs their visual attention.`;
+      return `${layoutNote}${visualNote}This was the last feedback before the user ended the session. Stop polling ${file} and do not reopen it - deliver any remaining updates directly in this conversation instead. Only run \`lavish-axi ${file} --reopen\` if the user explicitly asks for further review or something genuinely important needs their visual attention.`;
     }
-    return `${layoutNote}This was the last feedback before the Lavish Editor session ended. Stop polling ${file}. Deliver any remaining updates directly in this conversation, or run \`lavish-axi ${file}\` to open a fresh session if the user needs further visual review.`;
+    return `${layoutNote}${visualNote}This was the last feedback before the Lavish Editor session ended. Stop polling ${file}. Deliver any remaining updates directly in this conversation, or run \`lavish-axi ${file}\` to open a fresh session if the user needs further visual review.`;
   }
   const layoutPrefix =
     count > 0 ? layoutWarningsPrefix(file, layoutWarnings) : `Apply the requested changes to ${file}. `;
-  return `${layoutPrefix}Do not respond to the user just yet. Now you must run \`lavish-axi poll ${file} --agent-reply "<message for the user>"\` without --timeout-ms unless the user ended the session. The poll waits silently until the user sends more feedback, ends the session, or reports fresh layout_warnings - never kill it. If your harness limits how long a foreground command may run, run the poll as a background task; if it still gets killed or times out, just re-run it - queued feedback is never lost.`;
+  return `${layoutPrefix}${visualNote}Do not respond to the user just yet. Now you must run \`lavish-axi poll ${file} --agent-reply "<message for the user>"\` without --timeout-ms unless the user ended the session. The poll waits silently until the user sends more feedback, ends the session, or reports fresh layout_warnings - never kill it. If your harness limits how long a foreground command may run, run the poll as a background task; if it still gets killed or times out, just re-run it - queued feedback is never lost.`;
+}
+
+// Reshape a stored prompt into the low-noise form the model should reason over.
+// A visual-feedback unit collapses to: one composite image, a short marks
+// summary for orientation, the selected elements (each keeping its real uid so
+// it resolves against the dom_snapshot), and the note. Everything describing
+// individual marks (ids, labels, types-per-group), byte sizes, the transparent
+// overlay path, and the vestigial top-level uid/selector is dropped. All other
+// prompt kinds (messages, text-range, mermaid) pass through untouched.
+function publicizePrompt(prompt) {
+  const feedback = prompt?.target?.type === "visual-feedback-unit" ? prompt.target.feedback : null;
+  if (!feedback) return prompt;
+
+  const drawingGroups = Array.isArray(feedback.drawingGroups) ? feedback.drawingGroups : [];
+  const images = feedback.images && typeof feedback.images === "object" ? feedback.images : {};
+  const image = images.visualPath || feedback.visualPath || images.drawingOverlayPngPath || "";
+  const elements = (Array.isArray(feedback.htmlRefs) ? feedback.htmlRefs : []).map((ref) => {
+    const el = {};
+    if (ref.uid) el.uid = String(ref.uid);
+    if (ref.selector) el.selector = String(ref.selector);
+    if (ref.type) el.tag = String(ref.type);
+    if (ref.text) el.text = String(ref.text);
+    return el;
+  });
+  const note = (Array.isArray(feedback.notes) ? feedback.notes : [])
+    .map((entry) => String(entry?.text || "").trim())
+    .filter(Boolean)
+    .join("\n");
+
+  const unit = { tag: "feedback-unit", id: String(feedback.id || ""), state: String(feedback.state || "default") };
+  if (image) unit.image = image;
+  const marks = summarizeMarks(drawingGroups);
+  if (marks) unit.marks = marks;
+  if (elements.length) unit.elements = elements;
+  if (note) unit.note = note;
+  return unit;
+}
+
+// A one-line orientation hint, e.g. "2 marks: 1 box, 1 arrow" - enough to know
+// what shapes to look for in the composite, without the machine detail.
+function summarizeMarks(drawingGroups) {
+  const counts = new Map();
+  let total = 0;
+  for (const group of drawingGroups) {
+    for (const type of Array.isArray(group?.markTypes) ? group.markTypes : []) {
+      counts.set(type, (counts.get(type) || 0) + 1);
+      total += 1;
+    }
+  }
+  if (total === 0) return "";
+  const parts = [...counts.entries()].map(([type, n]) => `${n} ${type}`);
+  return `${total} mark${total === 1 ? "" : "s"}: ${parts.join(", ")}`;
+}
+
+function visualFeedbackPaths(prompts) {
+  if (!Array.isArray(prompts)) return [];
+  const paths = [];
+  for (const prompt of prompts) {
+    const feedback = prompt?.target?.type === "visual-feedback-unit" ? prompt.target.feedback : null;
+    const imagePath = feedback?.visualPath || feedback?.images?.visualPath || feedback?.images?.drawingOverlayPngPath;
+    if (typeof imagePath === "string" && imagePath) paths.push(imagePath);
+  }
+  return [...new Set(paths)];
 }
 
 // A finding stays worth a fix-and-recheck loop only while it's both new (not already reported to
