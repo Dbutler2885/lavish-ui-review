@@ -240,9 +240,10 @@ pnpm run build:skill    # regenerate skills/lavish/SKILL.md and skills/lavish-ui
 
 Node 22+, ESM-only JavaScript, type-checked through TypeScript's `checkJs` rather than written in TypeScript.
 
-The default branch is `main`.
-`.github/workflows/` defines lint, format, typecheck, test, and build across Linux, macOS, and Windows for pull requests against it.
-None of it has run yet: GitHub keeps Actions switched off on a forked repository until someone turns them on, so run `pnpm run check` locally before pushing.
+The default branch is `main`, and pull requests go against it directly.
+CI covers lint, format, typecheck, tests, and build across Linux, macOS, and Windows, and a second workflow checks that the generated skills are in sync.
+GitHub keeps Actions switched off on a forked repository until they are enabled, so run `pnpm run check` locally rather than waiting for checks to appear.
+`CONTRIBUTING.md` has the rest.
 
 ## License
 
