@@ -101,7 +101,7 @@ Add `-g` to install it for every project instead of the current one.
 The skill runs the CLI straight from this repository, so there is nothing else to install:
 
 ```sh
-npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#web-design -- lavish-ui-review <html-file>
+npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#main -- lavish-ui-review <html-file>
 ```
 
 This repository also carries the original `lavish` skill, inherited unchanged.
@@ -240,8 +240,8 @@ pnpm run build:skill    # regenerate skills/lavish/SKILL.md and skills/lavish-ui
 
 Node 22+, ESM-only JavaScript, type-checked through TypeScript's `checkJs` rather than written in TypeScript.
 
-The default branch is `web-design`.
-The workflows in `.github/` still trigger on `main`, left over from the fork, so CI does not currently run on this repository's branches.
+The default branch is `main`.
+CI runs lint, format, typecheck, tests, and build on every pull request against it, across Linux, macOS, and Windows.
 
 ## License
 

@@ -108,7 +108,7 @@ test("UI review skill launches the fork from its GitHub repository", () => {
 
   assert.match(
     md,
-    /npm exec --yes --prefer-online --package=github:Dbutler2885\/lavish-ui-review#web-design -- lavish-ui-review/,
+    /npm exec --yes --prefer-online --package=github:Dbutler2885\/lavish-ui-review#main -- lavish-ui-review/,
   );
   assert.doesNotMatch(md, /`npx -y lavish-axi/);
 });

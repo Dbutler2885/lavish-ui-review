@@ -59,12 +59,16 @@ test("build copies local design assets for published artifact injection", async 
   assert.match(buildScript, /tailwindcss-browser\.js/);
 });
 
-test("package metadata matches the GitHub repository used for npm provenance", async () => {
+test("package identifies this repository, not the project it forked from", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 
-  assert.equal(packageJson.repository.url, "git+https://github.com/kunchenguid/lavish-axi.git");
-  assert.equal(packageJson.bugs.url, "https://github.com/kunchenguid/lavish-axi/issues");
-  assert.equal(packageJson.homepage, "https://github.com/kunchenguid/lavish-axi#readme");
+  // The SDK's `update` command resolves this name against the npm registry, so
+  // leaving it as the origin project's name would offer to "update" this hard
+  // fork into a different package.
+  assert.equal(packageJson.name, "lavish-ui-review");
+  assert.equal(packageJson.repository.url, "git+https://github.com/Dbutler2885/lavish-ui-review.git");
+  assert.equal(packageJson.bugs.url, "https://github.com/Dbutler2885/lavish-ui-review/issues");
+  assert.equal(packageJson.homepage, "https://github.com/Dbutler2885/lavish-ui-review#readme");
 });
 
 test("pnpm lock root importer matches the publish manifest", async () => {
