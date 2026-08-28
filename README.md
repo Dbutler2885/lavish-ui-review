@@ -5,19 +5,20 @@ Circle the thing, draw an arrow to where it belongs, click the elements you mean
 
 "This card is too close to the header" is faster to draw than to write, and much harder to misread once drawn.
 
-## Relationship to upstream
+## Origin
 
-This is a fork of [kunchenguid/lavish-axi](https://github.com/kunchenguid/lavish-axi), Kun Chen's Lavish Editor.
-Upstream opens agent-generated HTML in a local browser, lets you annotate elements, text ranges, and Mermaid nodes, and ships that feedback back to the agent through a long-polling CLI.
-All of that still works here, unchanged.
+This tool began as a fork of [kunchenguid/lavish-axi](https://github.com/kunchenguid/lavish-axi), Kun Chen's Lavish Editor, and the editor underneath it is his work.
+That project opens agent-generated HTML in a local browser, lets you annotate elements, text ranges, and Mermaid nodes, and ships the feedback back to an agent over a long-polling CLI.
+This one keeps that core and builds a UI review tool on it: a drawing layer, a selection that holds marks and DOM elements together, named states with their own tabs, and a conversation panel that overlays the artifact instead of taking width from it.
 
-The fork adds a pixel drawing layer, a selection that holds marks and DOM elements together, named states with their own tabs, and a conversation panel that overlays the artifact instead of taking width from it.
-It runs on its own port under its own name, so you can keep upstream `lavish-axi` installed and use both.
+It is a hard fork, not a tracking one.
+The two projects split in July 2026 and this one does not pull `lavish-axi` releases.
+Treat what is here as this tool's behavior, and file anything you find against this repository.
 
-Upstream owns the underlying editor.
-Bug reports about annotation, export, sharing, or the layout audit almost certainly belong there.
+If you already run `lavish-axi`, the two coexist.
+This one uses its own command name, port, and state directory.
 
-## What the fork adds
+## What this tool adds
 
 ### Marks drawn over the artifact
 
@@ -103,7 +104,7 @@ The skill runs the CLI straight from this repository, so there is nothing else t
 npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#web-design -- lavish-ui-review <html-file>
 ```
 
-This repository also ships upstream's `lavish` skill unchanged.
+This repository also carries the original `lavish` skill, inherited unchanged.
 Use `lavish` for general visual explainers, plans, and diagrams.
 Use `lavish-ui-review` when you are iterating on an interface.
 
@@ -167,16 +168,18 @@ Each unit names the state it belongs to, so an agent editing a mobile variant kn
 The CLI strips what the agent does not need before delivery, including individual mark ids, per-mark geometry, byte counts, and the raw overlay path.
 What is left is a picture, a selector, and a sentence.
 
-### Separate identity from upstream
+### Coexisting with lavish-axi
 
-|           | `lavish-axi`        | `lavish-ui-review`     |
-| --------- | ------------------- | ---------------------- |
-| Port      | 4387                | 4391                   |
-| State     | `~/.lavish-axi/`    | `~/.lavish-ui-review/` |
-| Telemetry | on unless opted out | off                    |
+|       | `lavish-axi`     | `lavish-ui-review`     |
+| ----- | ---------------- | ---------------------- |
+| Port  | 4387             | 4391                   |
+| State | `~/.lavish-axi/` | `~/.lavish-ui-review/` |
 
-Both binaries ship from this package, so the fork never fights upstream over a port or a state file.
+Both binaries ship from this package, so having `lavish-axi` installed too costs you nothing.
 `bin/lavish-ui-review.js` sets those defaults and then runs the same CLI, which rewrites every command name it prints so an agent reading the output copies the right one.
+
+Neither binary reports telemetry when you build from this repository.
+The analytics endpoint is injected at build time and nothing here injects one, and `dist/ui-review.mjs` is compiled with it hard-coded empty on top of that.
 
 ## The frontend workflow workspace
 
@@ -209,16 +212,22 @@ lavish-ui-review workflow/projects/settings-redesign/mockups/review/settings-rev
 Slices 07 and 08, the drawing layer and the DOM binding, are the ones implemented in `src/` here.
 Read `workflow/README.md` for which slices are done and which are not.
 
-## Inherited from upstream
+## The rest of the editor
 
-These work the same as in `lavish-axi`, and upstream's [README](https://github.com/kunchenguid/lavish-axi#readme) documents them properly:
+Drawing is the part that is new here.
+The editor underneath carries the rest, all of it inherited from `lavish-axi`:
 
 - Element, text-range, and Mermaid node annotation, with Cmd/Ctrl+I toggling annotate and explore mode.
-- A render-time layout audit in the real browser that reports overflow, clipped text, and overlapping text as `layout_warnings`, and a curtain that holds error-severity findings back until a clean reload.
-- Live reload on artifact change, with iframe scroll position preserved.
-- `export` for a single self-contained HTML file, and `share` for publishing to ht-ml.app.
-- Sessions keyed by canonical file path, so there are no opaque session IDs to pass around.
-- A detached server that stops itself once nothing is connected.
+- A layout audit that runs in the real browser after fonts settle and reports overflow, clipped text, and overlapping text as `layout_warnings`.
+  A curtain holds error-severity findings back until a clean reload, and `--no-gate` skips it.
+- Live reload when the artifact file changes, with the iframe scroll position preserved across the reload.
+- `export`, which inlines local assets into one self-contained HTML file and leaves remote CDN references as links.
+- `share`, which publishes that same inlined HTML to [ht-ml.app](https://ht-ml.app), a third-party host that is not part of this tool.
+  Pages are public unless you pass `--password`.
+- Sessions keyed by the canonical file path, so there are no opaque session IDs to pass around.
+- A detached server that shuts itself down once no browser and no poll have been connected.
+
+`AGENTS.md` documents all of it in the detail a contributor needs.
 
 ## Development
 
@@ -230,12 +239,11 @@ pnpm run build:skill    # regenerate skills/lavish/SKILL.md and skills/lavish-ui
 ```
 
 Node 22+, ESM-only JavaScript, type-checked through TypeScript's `checkJs` rather than written in TypeScript.
-`AGENTS.md` covers the architecture in the detail a contributor needs.
 
 The default branch is `web-design`.
-CI in `.github/workflows/` still triggers on `main`, inherited from upstream, so it does not run on this fork's branches.
+The workflows in `.github/` still trigger on `main`, left over from the fork, so CI does not currently run on this repository's branches.
 
 ## License
 
-MIT, same as upstream.
-The editor is Kun Chen's work; this fork's additions sit on top of it.
+MIT.
+The editor this was built from is Kun Chen's work, released under the same license.
