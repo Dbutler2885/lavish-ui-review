@@ -15,7 +15,7 @@ export const UI_REVIEW_SKILL_DESCRIPTION =
   "for general non-UI visual explanations; use the original lavish skill instead.";
 
 export const UI_REVIEW_LAUNCHER =
-  "npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-axi-draw#web-design -- lavish-ui-review";
+  "npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#web-design -- lavish-ui-review";
 
 function bullets(items) {
   return items.map((item) => `- ${item}`).join("\n");

@@ -117,7 +117,7 @@ What the user says, and what you do:
   Read everything in `intent/`, confirm the mode, and build per-screen mockups (section 6 and 7).
   Run the self-review gate (section 8) before presenting anything.
 - "Let me see it." / "Open it for review."
-  Run `bin/fe-review.sh <slug> [screen.html]` to generate the review surface (the mockup inlined - never iframed, Lavish's annotation client cannot see into a nested iframe - scaled to fit the artifact iframe, with state buttons), then present it: `lavish-axi projects/<slug>/mockups/review/<screen>-review.html`, polling in the background.
+  Run `bin/fe-review.sh <slug> [screen.html]` to generate the review surface (the mockup inlined - never iframed, Lavish's annotation client cannot see into a nested iframe - scaled to fit the artifact iframe, with state buttons), then present it: `lavish-ui-review projects/<slug>/mockups/review/<screen>-review.html`, polling in the background.
   Regenerate after every edit; never edit the review file directly.
   (The forked review surface with drawing and cueing is slices 07-08; until then, plain Lavish annotations are the guidance units.)
 - "Do the edits." / (a batch of feedback arrives)

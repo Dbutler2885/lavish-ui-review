@@ -13,9 +13,12 @@ Use these root commands for the workflow layer:
 ```sh
 pnpm run workflow:test
 pnpm run workflow:status
-pnpm run workflow:render -- <slug> [screen.html]
-pnpm run workflow:review -- <slug> [screen.html]
+pnpm run workflow:render <slug> [screen.html]
+pnpm run workflow:review <slug> [screen.html]
 ```
+
+Do not insert `--` before the slug.
+pnpm 11 forwards `--` to the script as a literal argument, and the workflow scripts read it as the project slug, so `pnpm run workflow:render -- foo` fails looking for `projects/--/project.json`.
 
 When working inside `workflow/`, follow `workflow/AGENTS.md` in addition to this file.
 The modified Lavish surface remains in `src/`; the workflow layer should call it as a tool, not duplicate the review UI.

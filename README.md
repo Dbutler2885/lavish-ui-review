@@ -1,238 +1,241 @@
-<h1 align="center">lavish-axi</h1>
-<p align="center">
-  <a href="https://github.com/kunchenguid/lavish-axi/actions/workflows/ci.yml"
-    ><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/kunchenguid/lavish-axi/ci.yml?style=flat-square&label=ci"
-  /></a>
-  <a href="https://github.com/kunchenguid/lavish-axi/actions/workflows/release-please.yml"
-    ><img alt="Release" src="https://img.shields.io/github/actions/workflow/status/kunchenguid/lavish-axi/release-please.yml?style=flat-square&label=release"
-  /></a>
-  <a href="https://www.npmjs.com/package/lavish-axi"
-    ><img alt="npm" src="https://img.shields.io/npm/v/lavish-axi?style=flat-square"
-  /></a>
-  <a href="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue?style=flat-square"
-    ><img alt="Platform" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue?style=flat-square"
-  /></a>
-  <a href="https://x.com/kunchenguid"
-    ><img alt="X" src="https://img.shields.io/badge/X-@kunchenguid-black?style=flat-square"
-  /></a>
-  <a href="https://discord.gg/Wsy2NpnZDu"
-    ><img alt="Discord" src="https://img.shields.io/discord/1439901831038763092?style=flat-square&label=discord"
-  /></a>
-</p>
+# lavish-ui-review
 
-<h3 align="center">For when a rich editor is not rich enough.</h3>
+Review UI mockups in your browser by drawing on them.
+Circle the thing, draw an arrow to where it belongs, click the elements you mean, type one sentence, and your coding agent receives a picture of your marks over the page along with the CSS selectors you picked and your note.
 
-<p align="center">
-  <img alt="Lavish Editor demo" src="lavish-editor-marketing/renders/lavish-editor-marketing.gif" width="960" />
-</p>
+"This card is too close to the header" is faster to draw than to write, and much harder to misread once drawn.
 
-HTML is the new markdown. Lavish is the new editor for your HTML artifacts.
+## Relationship to upstream
 
-Agents are good at producing rich HTML artifacts, but the human-agent collaboration loop on such artifacts is lacking and falls back into screenshots and long responses for “tell me what to change.”
-That loses the thing HTML is best at: interactivity.
+This is a fork of [kunchenguid/lavish-axi](https://github.com/kunchenguid/lavish-axi), Kun Chen's Lavish Editor.
+Upstream opens agent-generated HTML in a local browser, lets you annotate elements, text ranges, and Mermaid nodes, and ships that feedback back to the agent through a long-polling CLI.
+All of that still works here, unchanged.
 
-Lavish Editor opens agent-generated HTML files in a local browser, lets you pinpoint elements, selected text, or Mermaid diagram nodes and send feedback to the agent to address.
+The fork adds a pixel drawing layer, a selection that holds marks and DOM elements together, named states with their own tabs, and a conversation panel that overlays the artifact instead of taking width from it.
+It runs on its own port under its own name, so you can keep upstream `lavish-axi` installed and use both.
 
-- **Local-first** - Review local HTML artifacts with a local CLI and no cloud dependency in the core feedback loop; hosted sharing through third-party ht-ml.app is explicit and opt-in.
-- **Human-AI collaboration** - Annotate elements, selected text ranges, and Mermaid diagram nodes, and send messages to the agent without leaving Lavish Editor.
-- **Battery included** - Lavish Editor teaches your agent good visualization for common use cases such as product or technical plans, design explorations and more out of the box.
+Upstream owns the underlying editor.
+Bug reports about annotation, export, sharing, or the layout audit almost certainly belong there.
 
-Lavish Editor is an [AXI](https://axi.md), which means -
+## What the fork adds
 
-- It's just a CLI any capable agent can run without setup.
-- It's optimized for agent ergonomics. TOON output, long polling, and contextual disclosure making it highly token efficient.
-- The skill and hooks below only handle discovery; agents learn to use the AXI by using it.
+### Marks drawn over the artifact
 
-## Frontend Workflow Workspace
+A `Markup` toggle in the top bar turns on a canvas layer sitting over the rendered page.
+Tools are box, arrow, arch, arch arrow, circle, and freehand, plus select, a hand tool for moving marks, and erase.
+Lavish stores marks in page coordinates, so they stay put when you scroll.
 
-This fork now also contains the consolidated `lavish-frontend-workflow` workspace under [`workflow/`](workflow/).
-That workspace owns the intent store, mockup projects, renderer, image-packet generator, edit queue, workflow scripts, PRD, and implementation slices.
-The Lavish review surface in this repo is one tool in that workflow: it supplies the pixel drawing layer, DOM binding, and unit cueing used during review.
+Undo and redo are Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z.
+Delete or Backspace removes the selection, Escape clears it.
+Select two or more marks and the group button fuses them into one labeled drawing group, which is how the agent learns that the circle and the arrow are one idea.
 
-Useful commands from the repo root:
+Lavish never writes into the artifact file.
+Marks live in the browser session, so the HTML on disk stays byte-identical and still opens on its own.
+
+### One selection holding marks and elements together
+
+The select tool builds a mixed selection.
+Drag a marquee to catch marks, click a page element to add it as a DOM reference, hold Shift to keep adding.
+The status readout in the top bar counts both, for example `2 marks + 1 element selected`.
+
+That mixed selection plus a typed note is the unit the agent receives.
+The drawing says where, the elements say which nodes, and the note says what to change.
+Queueing a unit is Enter in the sidebar note box, Shift+Enter for a newline.
+
+Move, reshape, group, or delete a mark that is already part of a queued edit, and Lavish pulls that edit back out of the queue.
+An edit you are still revising never reaches the agent half-finished.
+
+### Named states with their own tabs
+
+An artifact can declare several states, and Lavish renders one tab per state above the frame.
+Each state keeps its own marks and its own undo history.
+Its tab carries a count of the edits queued against it, so a desktop review and a mobile review do not merge into one pile.
+
+The contract an artifact has to satisfy:
+
+```html
+<div class="screen" data-lavish-state-root data-state="desktop">
+  <div data-state="desktop">...</div>
+  <div data-state="mobile" hidden>...</div>
+</div>
+<script>
+  var root = document.querySelector(".screen");
+  window.setState = function (id) {
+    root.dataset.state = id;
+    root.querySelectorAll("[data-state]").forEach(function (el) {
+      el.hidden = el.dataset.state !== id;
+    });
+  };
+</script>
+```
+
+Lavish calls `window.setState(id)` when you click a tab, and falls back to setting `data-state` on the root element when the artifact does not define it.
+Tabs stay hidden while an artifact has only one state.
+`workflow/templates/mockup-starter.html` is a working skeleton.
+
+### A conversation panel that overlays the artifact
+
+The panel is an overlay pinned to the right edge, not a column stealing width from the artifact.
+Minimize it and it collapses to a drawer handle showing how many edits are queued, with a dot when a reply arrived while it was closed.
+Above the chat log sits a note box that names the current selection, so queueing an edit does not mean hunting for where to type.
+
+### A picture of the marks on the page, not on transparency
+
+The browser can only capture the marks, because the sandboxed iframe cannot raster its own DOM.
+So when a unit arrives, the server writes the transparent overlay PNG to disk, screenshots the artifact headlessly at the overlay's exact pixel size, stacks the two, and hands the agent the composite as `annotated.png`.
+
+That step looks for a Chromium-family browser: Brave, Chrome, Chromium, or Edge in `/Applications`, or whatever `LAVISH_AXI_CHROME_BIN` or `CHROME_BIN` points at.
+The step is best-effort on purpose.
+If no browser is found or the render times out, the agent gets the transparent overlay instead and the review loop keeps going.
+
+## Install
+
+Install the agent skill, which teaches an agent the whole loop:
 
 ```sh
-pnpm run workflow:test
-pnpm run workflow:status
-pnpm run workflow:render -- <slug> [screen.html]
-pnpm run workflow:review -- <slug> [screen.html]
+npx skills add Dbutler2885/lavish-ui-review --skill lavish-ui-review
 ```
 
-## Quick Start
-
-Install the Lavish skill in the [Agent Skills](https://agentskills.io) format with [`npx skills`](https://github.com/vercel-labs/skills):
+Add `-g` to install it for every project instead of the current one.
+The skill runs the CLI straight from this repository, so there is nothing else to install:
 
 ```sh
-npx skills add kunchenguid/lavish-axi --skill lavish
+npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#web-design -- lavish-ui-review <html-file>
 ```
 
-That is the entire setup - no npm install needed.
-The skill teaches your agent to run Lavish through `npx -y lavish-axi`, so the CLI comes along on demand.
-Its frontmatter also includes Hermes Agent metadata, so Hermes-compatible harnesses can categorize and surface it as a first-class productivity skill.
-This installs the public `lavish` skill.
-The repository also contains an internal `lavish-design` brand skill for maintainers; default `npx skills add ... --list` and skills.sh discovery hide it unless `INSTALL_INTERNAL_SKILLS=1` is set.
-
-Then, in agents that expose skills as slash commands (Claude Code, for example), invoke it directly:
-
-```
-/lavish let's discuss our plan here
-```
-
-Or just ask for anything that is easier to grasp visually - a plan, comparison, diagram, table, code view, or report - and the agent loads the skill on its own when it recognizes the task.
-
-By default the skill lands in the current project's skills directory (`.claude/skills/`, for example); add `-g` to install it for all projects (`~/.claude/skills/`).
-
-## Other Ways to Use Lavish
-
-The skill is the recommended path, but it is not the only one.
-
-### Zero setup
-
-Lavish is an AXI, so any capable agent can run the CLI directly with nothing installed at all.
-Just tell your agent:
-
-```
-Use `npx lavish-axi` to write a product or technical plan for what we discussed.
-```
-
-### Session hook
-
-Want Lavish's ambient context - including your live open sessions - fed into every agent session instead of loading on demand?
-Install the CLI globally and opt into the hook:
-
-```sh
-npm install -g lavish-axi
-lavish-axi setup hooks
-```
-
-This installs a `SessionStart` hook for **Claude Code**, **Codex**, **OpenCode**, and **GitHub Copilot CLI** that surfaces open sessions, visualization playbooks, and usage guidance at the start of each session.
-Unlike the skill, the hook also shows your live open sessions, so a fresh agent session can resume an in-flight review.
-**Restart your agent session after running this** so the new hook takes effect.
+This repository also ships upstream's `lavish` skill unchanged.
+Use `lavish` for general visual explainers, plans, and diagrams.
+Use `lavish-ui-review` when you are iterating on an interface.
 
 ### From source
 
 ```sh
-git clone https://github.com/kunchenguid/lavish-axi.git
-cd lavish-axi
-pnpm install --frozen-lockfile
+git clone https://github.com/Dbutler2885/lavish-ui-review.git
+cd lavish-ui-review
+pnpm install
 pnpm run build
-pnpm link
+node dist/ui-review.mjs <html-file>
 ```
 
-## How It Works
+## A review session
 
-```
-┌───────────────┐
-│ Agent writes  │
-│ artifact.html │
-└───────┬───────┘
-        ▼
-┌────────────────────────┐
-│ lavish-axi <file_path> │
-│ opens local browser UI │
-└───────┬────────────────┘
-        ▼
-┌────────────────────────┐
-│ Human annotates text   │
-│ or elements, sends     │
-│ chat, or browser audit │
-│ reports layout issues  │
-└───────┬────────────────┘
-        ▼
-┌────────────────────────┐
-│ lavish-axi poll waits  │
-│ and returns prompts    │
-│ or layout warnings     │
-└────────────────────────┘
+The examples below write `lavish-ui-review` for whichever launcher you installed, so substitute the `npm exec` form or `node dist/ui-review.mjs` as needed.
+
+```sh
+lavish-ui-review mockup.html                 # open the browser and start a session
+lavish-ui-review poll mockup.html            # wait for the user to send feedback
+lavish-ui-review poll mockup.html --agent-reply "Widened the card."
+lavish-ui-review end mockup.html             # finish the review
+lavish-ui-review stop                        # shut down the background server
 ```
 
-- **File-path identity** - Sessions are keyed by the canonical HTML file path, so agents do not need opaque IDs.
-- **Portable artifacts** - The artifact runs in an iframe while Lavish injects a small SDK for annotations, snapshots, feedback controls, and render-time layout checks.
-  Lavish does not inject any design system, so the saved HTML file renders identically whether you open it through `lavish-axi` or directly in a browser.
-  Before writing HTML, choose a design system in strict priority order: follow a user-requested look first; otherwise inspect the project the artifact is about - the subject or product whose content or UI it represents, which may differ from your current working directory - and match that project's Tailwind or theme config, CSS variables or design tokens, component library, brand assets, or existing styled pages.
-  If the artifact previews, proposes, or mocks a specific app's UI, render it in that app's own design system so it faithfully shows the product, even when you are running in a different repo.
-  Only when both come up empty, run `lavish-axi design` for a copy-pasteable Tailwind CSS v4 + DaisyUI v5 CDN fallback, a content-to-playbook router, and Mermaid diagram tooling.
-  That fallback guidance recommends DaisyUI's `luxury` theme by default, warns not to `@apply` DaisyUI classes inside Tailwind browser-runtime style blocks, includes an optional layout safety CSS snippet for dense nested grid/flex layouts, and provides a pinned Mermaid CDN snippet with initialization for flows, architecture, state, and sequence diagrams.
-- **Open-time layout gate** - The browser chrome masks each artifact until the real in-iframe layout audit reports no error-severity findings.
-  Warning-only artifacts reveal normally; error findings notify the agent through the same `layout_warnings` poll path and keep the curtain up until a clean reload.
-  The user can click **Show anyway**, and a bounded safety timeout reveals with a persistent layout-issues banner so review is never blocked indefinitely.
-- **Layout warnings** - After fonts load and layout settles, the injected SDK audits the real browser render for page horizontal overflow, element overflow, clipped or visibly spilling text, and overlapping text.
-  Intentional horizontal scrollers using `overflow-x: auto` or `scroll` are excluded from horizontal checks, and `overflow-y: auto` or `scroll` is treated as intentional for vertical overflow.
-  Current findings are returned from `lavish-axi poll` as `layout_warnings` with `selector`, `kind`, `overflowPx`, `viewportWidth`, `severity`, and `persistent`.
-  Fresh error-severity findings should be fixed and rechecked before asking the human to review; repeated or warning-only findings can be surfaced to the human with a note when the cause is not obvious.
-- **Local assets** - Copy local images, CSS, fonts, and scripts next to the HTML artifact and reference them with relative paths from that directory; root-prefixed paths such as `/assets/logo.png` will not resolve through Lavish's artifact route.
-- **Export and sharing** - `lavish-axi export` writes `<name>.export.html` by inlining local assets only, stripping the annotation SDK, and leaving remote CDN/font references as links that still need network access.
-  `lavish-axi share` publishes the same local-inlined HTML to [ht-ml.app](https://ht-ml.app), a third-party hosting service not part of Lavish.
-  Publishing sends the artifact to ht-ml.app's servers, public by default, or private and password-protected with `--password`; the response includes a secret `update_key` shown once for later management.
-  Bundling never fetches remote URLs, Lavish itself does not set a CSP, local reads stay confined and size-capped, and absolute `file://` paths outside safe inlined asset references are redacted before output.
-  Per-asset and per-bundle inline caps default to 10 MB and 25 MB, overridable with `LAVISH_AXI_EXPORT_MAX_ASSET_BYTES` and `LAVISH_AXI_EXPORT_MAX_BUNDLE_BYTES`.
-  Unresolved local assets or export notices such as author-set CSP meta tags and redacted file URLs are surfaced in command or browser output.
-  Use `--token` or `LAVISH_AXI_HTML_APP_TOKEN` for an optional bearer token; set `LAVISH_AXI_HTML_APP_API_URL` only when overriding the ht-ml.app API base.
-- **Live reload** - Lavish watches the HTML artifact file by default and preserves the artifact iframe scroll position across reloads. To also reload on sibling asset changes, add `data-lavish-live-reload-root` to the root element or `<meta name="lavish-live-reload" content="root">`.
-- **Feedback controls** - Native controls (radios, checkboxes, inputs, selects, buttons, labels, disclosure summaries, contenteditable) are interactive automatically, so they do not need `data-lavish-action`.
-  For reversible choices, let option clicks update local state, then queue exactly one final answer from a per-question submit or Queue answer button with `window.lavish.queuePrompt()`.
-  Mark only custom (non-native) clickable elements with `data-lavish-action` so Lavish does not annotate them, and use `data-lavish-question` or `queueKey` when pre-send updates for the same question should replace each other.
-  The browser chrome keeps editing actions in the overflow menu (copy path, reload artifact, copy DOM snapshot, export standalone HTML, publish link, end session) and can submit queued prompts with **Send & end session**, which sends the prompts and user-ended attribution together.
-- **Keyboard shortcuts** - In the chrome composer, Enter sends queued prompts and Shift+Enter inserts a newline.
-  In the annotation card, Enter queues the annotation, Shift+Enter inserts a newline, and Ctrl+Enter (Cmd+Enter on macOS) queues it and sends all queued prompts immediately.
-  Cmd+I or Ctrl+I toggles between annotate and explore mode from either the browser chrome or the artifact iframe, including while focus is in a textarea or control.
-- **Agent presence** - The browser shows when no agent is listening, keeps queued feedback and fresh layout warnings for the next successful `lavish-axi poll` send even across reloads, and only blocks human sends while the agent is working on delivered feedback. The no-timeout poll writes an immediate stderr banner and periodic stderr heartbeats while stdout stays reserved for the final response; if the poll is interrupted or times out, re-run it because queued feedback is never lost.
-- **Session end etiquette** - Lavish tracks who ended a session: a human clicking **End session** (or **Send & end session**) in the browser is a user-initiated end, while `lavish-axi end <html-file>` is agent-initiated.
-  A plain `lavish-axi <html-file>` after a user-initiated end refuses to reopen the browser and returns guidance instead; pass `--reopen` only when the user asks for further review or something important needs their visual attention.
-  Agent-initiated ends keep reopening normally, same as before.
-  `lavish-axi poll`'s `ended` response and the `feedback` response for the final batch before an end both carry `next_step` guidance telling the agent to stop polling and deliver remaining updates in chat instead of reopening.
-- **Precise targets** - Text annotations include selected text plus range anchors, so agents are not limited to whole-element selectors.
-- **Mermaid diagrams** - Rendered Mermaid diagrams become pannable and zoomable while you explore (drag to pan, scroll to zoom) and freeze when you turn on annotation so a click lands on a single node. Clicking a node annotates the whole node and sends the agent its diagram id, node id, and rendered label instead of just a CSS selector. Lavish only enhances the live render, so the saved HTML still opens identically anywhere.
-- **Server cleanup** - The detached server stops after the last session ends when nothing is connected, or after `LAVISH_AXI_IDLE_TIMEOUT_MS` (default 30 minutes) with no browser or poll connections.
-  Set `LAVISH_AXI_IDLE_TIMEOUT_MS=0` or `off` to disable idle self-shutdown.
-- **Local-first state** - Session state stays under `~/.lavish-axi/` by default, or `LAVISH_AXI_STATE_DIR` when set.
-- **Network binding** - The server binds to loopback (`127.0.0.1`) by default. Set `LAVISH_AXI_HOST` to bind elsewhere; a wildcard (`0.0.0.0` or `::`) binds every interface. Binding beyond loopback exposes an unauthenticated server that can read and serve arbitrary local files to anything that can reach it, so only do so on a trusted network. Set `LAVISH_AXI_LINK_HOST` to control the hostname written into generated session links (defaults to the bind address, or loopback when bound to a wildcard).
+`poll` blocks and prints nothing until feedback arrives, which is what makes it usable as an agent's wait state.
+Leave it running, and if your harness kills it, run it again.
+Queued feedback sits in `~/.lavish-ui-review/state.json` until a poll collects it, so nothing is lost.
 
-## CLI Reference
+| Command                               | What it does                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `lavish-ui-review`                    | List open sessions and print the usage guidance an agent reads.        |
+| `lavish-ui-review <html-file>`        | Open or resume a review session and launch the browser.                |
+| `lavish-ui-review poll <html-file>`   | Wait for feedback, layout warnings, or the end of the session.         |
+| `lavish-ui-review end <html-file>`    | End the session as the agent, which still allows a later plain reopen. |
+| `lavish-ui-review export <html-file>` | Write a single self-contained HTML file with local assets inlined.     |
+| `lavish-ui-review stop`               | Shut down the background server.                                       |
 
-| Command                         | Description                                                                                                                                                                                                                                                               |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lavish-axi`                    | Show current sessions and usage guidance.                                                                                                                                                                                                                                 |
-| `lavish-axi update`             | Check for or apply the latest npm release through the AXI SDK self-updater.                                                                                                                                                                                               |
-| `lavish-axi <html-file>`        | Open or resume a Lavish Editor session, with the open-time layout gate enabled by default. Refuses to reopen a session the user explicitly ended from the browser unless `--reopen` is passed.                                                                            |
-| `lavish-axi poll <html-file>`   | Long-poll until the user sends feedback, ends the session, or the browser reports fresh `layout_warnings`; leave no-timeout polls running, or re-run them if interrupted. On `status: ended`, stop polling and do not reopen uninvited.                                   |
-| `lavish-axi end <html-file>`    | End a session as the agent; unlike a user-initiated end from the browser, this still allows a plain reopen later.                                                                                                                                                         |
-| `lavish-axi export <html-file>` | Write a portable copy of the artifact: one HTML file with its local assets inlined, so it opens with no server and no sibling files. Remote CDN/font references are left as links.                                                                                        |
-| `lavish-axi share <html-file>`  | Publish the artifact (local assets inlined) to [ht-ml.app](https://ht-ml.app), a third-party host not part of Lavish, and print a visitable URL plus a secret update key; shares are public by default, and `--password` makes viewers enter the password before viewing. |
-| `lavish-axi stop`               | Shut down the background server.                                                                                                                                                                                                                                          |
-| `lavish-axi playbook [id]`      | List focused artifact guidance or show one playbook; agents must open each matching playbook before writing HTML.                                                                                                                                                         |
-| `lavish-axi design`             | Show the Tailwind + DaisyUI CDN fallback, content-to-playbook router, Mermaid diagram tooling, `luxury` default theme, DaisyUI `@apply` warning, and layout safety snippet.                                                                                               |
-| `lavish-axi setup hooks`        | Install or repair optional SessionStart hooks for Claude Code, Codex, OpenCode, and GitHub Copilot CLI; restart the agent session afterward.                                                                                                                              |
-| `lavish-axi server`             | Run the local Lavish Editor server.                                                                                                                                                                                                                                       |
+Useful flags: `--no-open` creates the session without launching a browser, `--reopen` reopens a session the user ended from the browser, `--no-gate` skips the layout curtain, and `--timeout-ms` bounds a poll for scripting and tests.
 
-Known playbook IDs: `diagram`, `table`, `comparison`, `plan`, `code`, `input`, `slides`.
-One artifact often combines several playbooks, such as a plan that includes a comparison and a diagram, so agents must match against each `use_when` trigger and open every matching playbook before writing HTML.
-For flows, architecture, state, or sequence diagrams, open the diagram playbook and use the Mermaid tooling from `lavish-axi design` unless SVG is needed for richly annotated nodes; avoid hand-built div/flexbox boxes-and-arrows.
+### What the agent gets back
 
-### Flags
+A poll that returns feedback looks like this:
 
-| Command                  | Flag                  | Description                                                                                                                                                                                                                         |
-| ------------------------ | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lavish-axi <html-file>` | `--no-open`           | Ensure the server/session exists without opening another browser window.                                                                                                                                                            |
-| `lavish-axi <html-file>` | `--no-gate`           | Skip the open-time layout curtain for this browser open.                                                                                                                                                                            |
-| `lavish-axi <html-file>` | `--reopen`            | Reopen a session the user explicitly ended from the browser; without it, a plain open refuses and explains why instead of reopening uninvited.                                                                                      |
-| `lavish-axi update`      | `--check`             | Report current vs latest npm version without installing an update.                                                                                                                                                                  |
-| `lavish-axi export`      | `--out <path>`        | Write the export to a specific path instead of `<name>.export.html` next to the source.                                                                                                                                             |
-| `lavish-axi share`       | `--password <pw>`     | Make the third-party ht-ml.app page private; viewers must supply the password.                                                                                                                                                      |
-| `lavish-axi share`       | `--token <t>`         | Attach an optional bearer token (`LAVISH_AXI_HTML_APP_TOKEN`); never required to publish.                                                                                                                                           |
-| `lavish-axi poll`        | `--agent-reply "..."` | Show the agent's reply in the existing browser chat before polling again.                                                                                                                                                           |
-| `lavish-axi poll`        | `--timeout-ms <ms>`   | Test/debug escape hatch only; agents should normally omit it and leave the long poll running.                                                                                                                                       |
-| `lavish-axi stop`        | `--port <port>`       | Shut down a server running on a non-default port.                                                                                                                                                                                   |
-| `lavish-axi server`      | `--verbose`           | Log session and watcher events to stderr; can also be enabled with `LAVISH_AXI_DEBUG=1`. Detached server output is appended to `~/.lavish-axi/server.log` (or `LAVISH_AXI_STATE_DIR/server.log`) for startup and crash diagnostics. |
+```
+prompts[1]:
+  - tag: feedback-unit
+    id: u-demo-2
+    state: desktop
+    image: /Users/you/.lavish-ui-review/feedback-assets/39f58e28d1019bad/u-demo-2/annotated.png
+    marks: "2 marks: 1 box, 1 arrow"
+    elements[1]{uid,selector,tag,text}:
+      "5",div.card,element,$29 / month Choose Pro
+    note: Tighten the card padding
+```
+
+Each unit names the state it belongs to, so an agent editing a mobile variant knows not to touch the desktop one.
+`image` is an absolute path the agent opens with an image-capable tool, and the poll's `next_step` says to do that before editing anything.
+`uid` resolves against the `dom_snapshot` the same response carries.
+
+The CLI strips what the agent does not need before delivery, including individual mark ids, per-mark geometry, byte counts, and the raw overlay path.
+What is left is a picture, a selector, and a sentence.
+
+### Separate identity from upstream
+
+|           | `lavish-axi`        | `lavish-ui-review`     |
+| --------- | ------------------- | ---------------------- |
+| Port      | 4387                | 4391                   |
+| State     | `~/.lavish-axi/`    | `~/.lavish-ui-review/` |
+| Telemetry | on unless opted out | off                    |
+
+Both binaries ship from this package, so the fork never fights upstream over a port or a state file.
+`bin/lavish-ui-review.js` sets those defaults and then runs the same CLI, which rewrites every command name it prints so an agent reading the output copies the right one.
+
+## The frontend workflow workspace
+
+`workflow/` holds `lavish-frontend-workflow`, a local design workspace where the deliverable is an HTML mockup plus the intent it was built from, never production code.
+It moved here from a sibling repository so one repo owns both the review UI and the workflow that drives it.
+The workflow is the loop around the review step: construct intent, build mockups, iterate through review, hand off.
+
+```sh
+pnpm run workflow:status                          # disk-derived status for every project
+pnpm run workflow:test                            # the workspace's own tests
+pnpm run workflow:render <slug> [screen.html]     # headless PNG render of one screen
+pnpm run workflow:review <slug> [screen.html]     # build the review-wrapped HTML
+```
+
+Do not write `pnpm run workflow:render -- <slug>`.
+pnpm forwards the `--` as a literal argument and the script reads it as the project slug.
+
+The workspace has its own scripts under `workflow/bin/` for things without a root alias, including `fe-new.sh` to scaffold a project, `fe-intent.sh` for the intent store, and `fe-fonts.sh` for the embeddable font catalog.
+A typical pass:
+
+```sh
+workflow/bin/fe-new.sh settings-redesign --mode redesign
+# build projects/settings-redesign/mockups/settings.html
+pnpm run workflow:render settings-redesign settings.html
+pnpm run workflow:review settings-redesign settings.html
+lavish-ui-review workflow/projects/settings-redesign/mockups/review/settings-review.html
+```
+
+`workflow/AGENTS.md` is the operating manual and `workflow/thoughts/shared/plans/lavish-frontend-workflow/` holds the PRD and the implementation slices.
+Slices 07 and 08, the drawing layer and the DOM binding, are the ones implemented in `src/` here.
+Read `workflow/README.md` for which slices are done and which are not.
+
+## Inherited from upstream
+
+These work the same as in `lavish-axi`, and upstream's [README](https://github.com/kunchenguid/lavish-axi#readme) documents them properly:
+
+- Element, text-range, and Mermaid node annotation, with Cmd/Ctrl+I toggling annotate and explore mode.
+- A render-time layout audit in the real browser that reports overflow, clipped text, and overlapping text as `layout_warnings`, and a curtain that holds error-severity findings back until a clean reload.
+- Live reload on artifact change, with iframe scroll position preserved.
+- `export` for a single self-contained HTML file, and `share` for publishing to ht-ml.app.
+- Sessions keyed by canonical file path, so there are no opaque session IDs to pass around.
+- A detached server that stops itself once nothing is connected.
 
 ## Development
 
 ```sh
-pnpm run check          # Run all verification commands
-pnpm run build          # Bundle the publishable CLI, chrome, and design assets
-pnpm run build:skill    # Regenerate the installable lavish skill
-pnpm test               # Run node:test tests
-pnpm run lint           # Run ESLint
-pnpm run format:check   # Check Prettier formatting
-pnpm run typecheck      # Run TypeScript checkJs validation
+pnpm run check          # build, lint, format check, typecheck, tests, skill freshness
+pnpm test               # node:test over test/
+pnpm run build          # bundle dist/cli.mjs and dist/ui-review.mjs
+pnpm run build:skill    # regenerate skills/lavish/SKILL.md and skills/lavish-ui-review/SKILL.md
 ```
+
+Node 22+, ESM-only JavaScript, type-checked through TypeScript's `checkJs` rather than written in TypeScript.
+`AGENTS.md` covers the architecture in the detail a contributor needs.
+
+The default branch is `web-design`.
+CI in `.github/workflows/` still triggers on `main`, inherited from upstream, so it does not run on this fork's branches.
+
+## License
+
+MIT, same as upstream.
+The editor is Kun Chen's work; this fork's additions sit on top of it.
