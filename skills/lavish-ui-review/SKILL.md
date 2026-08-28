@@ -24,12 +24,12 @@ Lavish owns the State tabs, drawing buckets, queued-edit counts, and State-speci
 ## Run the feedback loop
 
 1. Create or identify the review HTML file.
-2. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-axi-draw#web-design -- lavish-ui-review <html-file>`.
-3. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-axi-draw#web-design -- lavish-ui-review poll <html-file>` and leave the long poll running while the user reviews.
+2. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#main -- lavish-ui-review <html-file>`.
+3. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#main -- lavish-ui-review poll <html-file>` and leave the long poll running while the user reviews.
 4. Read every returned feedback unit's State, note, marks, DOM references, and image path before editing.
 5. Apply feedback sequentially and verify the affected State in a real browser.
-6. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-axi-draw#web-design -- lavish-ui-review poll <html-file> --agent-reply "<message>"` to continue the same session.
-7. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-axi-draw#web-design -- lavish-ui-review end <html-file>` only when the review is genuinely finished.
+6. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#main -- lavish-ui-review poll <html-file> --agent-reply "<message>"` to continue the same session.
+7. Run `npm exec --yes --prefer-online --package=github:Dbutler2885/lavish-ui-review#main -- lavish-ui-review end <html-file>` only when the review is genuinely finished.
 
 Do not recreate an existing application as approximate HTML merely to annotate it.
 Use a screenshot-backed surface for an existing UI and reserve HTML mockups for proposed interfaces and alternatives.

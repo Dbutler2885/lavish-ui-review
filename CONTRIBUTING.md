@@ -1,44 +1,40 @@
 # Contributing
 
 Thanks for wanting to contribute.
-One rule up front:
 
-**Human-authored pull requests targeting `main` must be raised through [`no-mistakes`](https://github.com/kunchenguid/no-mistakes).**
-We require this to reduce the maintainer's burden of reviewing and merging contributions.
+Branch off `main`, make your change, and open a pull request against `main`.
+There is no gate in front of the push and no signature the PR body has to carry.
 
-`no-mistakes` puts a local git proxy in front of your real remote.
-Pushing through it runs an AI-driven review/test/lint pipeline in an isolated worktree, forwards the push upstream only after every check passes, and opens a clean PR automatically.
+## Before you push
 
-A GitHub Actions check (`Require no-mistakes`) runs on PRs targeting `main` and fails if the body is missing the deterministic signature that no-mistakes writes.
-The release and dependency bots are exempt so their automation keeps working, but regular contributor PRs without the signature will not be reviewed or merged.
+```sh
+pnpm install
+pnpm run check
+```
 
-## Workflow
+`pnpm run check` is build, lint, format check, typecheck, tests, and a check that the committed skills still match their generator.
+Run it locally and read the output.
+GitHub keeps Actions switched off on a forked repository until they are enabled, so do not assume a green checkmark will appear on the PR to catch what you missed.
 
-Fork routing requires `no-mistakes` v1.30.1 or newer.
+Use TDD for bug fixes and new features.
+For a bug, reproduce it end to end first, the way someone using the tool would hit it, so the fix addresses the real cause.
 
-1. Fork the repo, then clone the parent repo or set your local `origin` back to the parent repo (`git@github.com:kunchenguid/lavish-axi.git`).
-2. Create a branch and make your changes.
-3. Initialize or refresh the gate with your fork as the push target: `no-mistakes init --fork-url git@github.com:<you>/lavish-axi.git`.
-4. Commit your changes.
-5. Push through the gate instead of pushing to `origin`:
+## Repo conventions
 
-   ```sh
-   git push no-mistakes
-   ```
+- Node 22+, ESM-only JavaScript, validated through TypeScript's `checkJs` rather than written in TypeScript.
+- Regenerate the installable skills with `pnpm run build:skill` and commit the result. `pnpm run check` fails if they drift.
+- Do not reformat repo-provided `.agents/` skill content. `.prettierignore` excludes it deliberately.
+- Do not hand-edit `CHANGELOG.md` or `.release-please-manifest.json`. release-please owned them and the workflow is now disabled, so treat both as frozen history.
 
-6. Run `no-mistakes` to attach to the pipeline, watch findings, and auto-fix or review as needed.
-7. Once the pipeline passes, it pushes the branch to your fork and opens the PR against this parent repo for you.
+## Things worth knowing
 
-See the [no-mistakes quick start](https://kunchenguid.github.io/no-mistakes/start-here/quick-start/) for the full first-run walkthrough.
+This project is a hard fork of [lavish-axi](https://github.com/kunchenguid/lavish-axi) and does not track it, so send changes here rather than upstream.
 
-## Repo Conventions
+Nothing publishes to npm from this repository.
+The release workflow is disabled, and no build here injects an analytics endpoint, so neither binary reports telemetry.
 
-- Node 22+, ESM-only JavaScript, and TypeScript `checkJs` validation.
-- Run `pnpm run check` before pushing.
-- Do not reformat repo-provided `.agents/` skill content; `.prettierignore` excludes it intentionally.
-- Do not hand-edit `CHANGELOG.md` or `.release-please-manifest.json`.
-- User-facing telemetry docs should stay minimal: anonymous usage telemetry, no sensitive content, and `LAVISH_AXI_TELEMETRY=0` opt-out.
+`AGENTS.md` is the architecture reference. It is long, and it is the fastest way to understand the process model, the session store, and the injected artifact SDK before changing any of them.
 
 ## Questions
 
-Open an issue, or talk to me on [Discord](https://discord.gg/Wsy2NpnZDu).
+Open an issue.

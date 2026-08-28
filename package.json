@@ -1,8 +1,8 @@
 {
-  "name": "lavish-axi",
+  "name": "lavish-ui-review",
   "version": "0.1.36",
   "packageManager": "pnpm@11.1.1",
-  "description": "HTML is the new markdown. Lavish is the new editor for your HTML artifacts.",
+  "description": "Review UI mockups in the browser. Draw on them, annotate text and DOM elements, and send it all back to your coding agent.",
   "type": "module",
   "bin": {
     "lavish-axi": "dist/cli.mjs",
@@ -67,12 +67,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kunchenguid/lavish-axi.git"
+    "url": "git+https://github.com/Dbutler2885/lavish-ui-review.git"
   },
   "bugs": {
-    "url": "https://github.com/kunchenguid/lavish-axi/issues"
+    "url": "https://github.com/Dbutler2885/lavish-ui-review/issues"
   },
-  "homepage": "https://github.com/kunchenguid/lavish-axi#readme",
+  "homepage": "https://github.com/Dbutler2885/lavish-ui-review#readme",
   "publishConfig": {
     "access": "public"
   }

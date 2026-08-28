@@ -52,5 +52,5 @@ lib/legacy/              retired print-era bases awaiting adaptation
 ## Requirements
 
 - Node 18+ (uses only the standard library).
-- [`lavish-axi`](https://github.com/kunchenguid/lavish-axi) on PATH for the review surfaces (until the fork ships).
+- The `lavish-ui-review` CLI from this repository for the review surfaces. See the [root README](../README.md) for how to install it.
 - A Chromium-based browser for rendering checks.
